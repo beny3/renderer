@@ -191,19 +191,28 @@ void nearest_linear(vector *vertics, vector *point, int nb){
 }
 
 void nearest(node *root, vector *vertics, vector *point, int *count, int depth, float *dist_min){
-	printf("call %d depth %d \n", (*count)++, depth);
+	//printf("call %d depth %d \n", (*count)++, depth);
 	
 	vector dist = minus(point, vertics + root->point);
 	float maybe_min = normalize(&dist);
-	if (maybe_min < *dist_min)*dist_min = maybe_min;
-	//printf("x %f nb call %d\n", vertics[root->point].x, *count); 
-	 printf("min %f point %d \n", *dist_min, root->point);	
-	
-	if (point->el[root->plan] - *dist_min <= root->limit && root->left){
-		 nearest(root->left, vertics, point, count, depth + 1, dist_min);
+	if (maybe_min < *dist_min){
+		*dist_min = maybe_min;
+	 	//printf("min %f point %d \n", *dist_min, root->point);	
 	}
-	if (point->el[root->plan] + *dist_min >= root->limit && root->right){
-		 nearest(root->right, vertics, point, count, depth + 1, dist_min);
+	if ( point->el[root->plan] > root->limit){
+		if (point->el[root->plan] + *dist_min >= root->limit && root->right){
+			 nearest(root->right, vertics, point, count, depth + 1, dist_min);
+		}
+		if (point->el[root->plan] - *dist_min <= root->limit && root->left){
+			 nearest(root->left, vertics, point, count, depth + 1, dist_min);
+		}
+	}else{
+		if (point->el[root->plan] - *dist_min <= root->limit && root->left){
+			 nearest(root->left, vertics, point, count, depth + 1, dist_min);
+		}
+		if (point->el[root->plan] + *dist_min >= root->limit && root->right){
+			 nearest(root->right, vertics, point, count, depth + 1, dist_min);
+		}
 	}
 		
 }

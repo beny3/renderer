@@ -1,7 +1,7 @@
 /* include the X library headers */
 //#include "Eigen/Dense"
 
-#include "kdtree3.h"
+#include "kdtree2.h"
 #include "finit3.h"
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
@@ -135,31 +135,28 @@ int main () {
 	printf("%d \n", plane_intersection(drawing, &n, &o, &r, &lambda));
 
 	//test KD tree
-	clock_t start = clock();
 	int *verif = new int[ico.nb]();
 	int count=0;
 	//for (float l=-0.3; l < 0.4; l+= 0.001){
+		float dist = 2;
+		vector test_point = vec(0.001158, -0.430398, -0.53);
+
+		clock_t start = clock();
+
 		node *root = build_KD(ico.vertics, ico.nb);
-		//line_query(root, ico.vertics, 0, 0.01, 0, &count, 0);
-		float limit[] = {0.2,0.3, 0.5, 0.7, 0.1, 0.2};
-		printf("limit %f / plan %d \n", root->limit, root->plan);
-		//find(root->left, ico.vertics, verif);
-		printf("\n kd search \n");
-		box_query(root, ico.vertics, (vector2D*)limit, &count, 0);
-		printf("\n*************\n linear search \n");
-		linear_box_query(ico.vertics, (vector2D*)limit, ico.nb);
-		
-		///////////////////////
-		vector tp = minus(ico.vertics, ico.vertics + 1);
-		float dist = normalize(&tp);
-		printf("nearest search \n");
-		nearest(root, ico.vertics, ico.vertics, &count, 0, &dist);
+		//box_query(root, ico.vertics, (vector2D*)limit, &count, 0);
+		//printf("\n*************\n linear search \n");
+		//linear_box_query(ico.vertics, (vector2D*)limit, ico.nb);
+		nearest(root, ico.vertics, &test_point, &count, 0, &dist);
+
+		clock_t end = clock();
+
+		printf("temps kd %f %d\n", (float)(end -start)/CLOCKS_PER_SEC, count);
 		printf("linear nearest search \n");
-		nearest_linear( ico.vertics+1, ico.vertics, ico.nb);
+		nearest_linear( ico.vertics, &test_point, ico.nb);
 		//erase(root); 
 	//}
-	clock_t end = clock();
-	printf("temps kd %f %d\n", (float)(end -start)/CLOCKS_PER_SEC, count);
+
 	//find(root, verif);
 	//for(int i=0; i<ico.nb; i++)printf("%d \n", verif[i]);
 	//test gaussbeny@beny:~/renderer/finit$ beny@beny:~/renderer/finit$ 
@@ -237,7 +234,17 @@ int main () {
 		//printVect(velocities, ico.nb);
 		//target.x = startx + 0.3*sin(iter*0.01);
 		reset(&buffer);
-
+		node *root = build_KD(ico.vertics, ico.nb);
+		start = clock();
+		dist = 2;
+		count = 0;
+		nearest(root, ico.vertics, &test_point, &count, 0, &dist);
+		end = clock();
+		printf("temps kd %f %d\n", (float)(end -start)/CLOCKS_PER_SEC, count);
+		start = clock();
+		nearest_linear( ico.vertics, &test_point, ico.nb);
+		end = clock();
+		printf("temps linear %f %d\n", (float)(end -start)/CLOCKS_PER_SEC, count);
 		if(iter > 100){
 			clock_t start = clock();
 

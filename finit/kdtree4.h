@@ -17,52 +17,62 @@ node pool[4000];
 node *pool_pointer = pool;
 
 void build_rec_KD(vector *points, node *root, node **fathers_point,  int nb){
-	node *left = pool_pointer++;
-	node *right = pool_pointer++;
-	root->left = left;
-	root->right = right;
-	char plan = root->plan;
-	float limit = root->limit;
-	int nb_left = 0;
-	int nb_right = 0;
-	float medianLeft = 0;
-	float medianRight = 0;
-	int next_plan = (plan+1)%3;
 
-	for (int i=0; i< nb; i++){
-		if (fathers_point[i] == root){
-			if (points[i].el[plan] < limit){
-				medianLeft += points[i].el[next_plan];
-				fathers_point[i] = left;
-				left->point = i;
-				nb_left++;
-			}else{
-				medianRight += points[i].el[next_plan];
-				fathers_point[i] = right;
-				right->point = i;
-				nb_right++;
+	int stk_ptr = 0;
+	node *stk[200];
+	stk[stk_ptr++]=root;
+
+	while(stk_ptr){
+		root = stk[--stk_ptr];
+
+		node *left = pool_pointer++;
+		node *right = pool_pointer++;
+		root->left = left;
+		root->right = right;
+		char plan = root->plan;
+		float limit = root->limit;
+		int nb_left = 0;
+		int nb_right = 0;
+		float medianLeft = 0;
+		float medianRight = 0;
+		int next_plan = (plan+1)%3;
+
+		for (int i=0; i< nb; i++){
+			if (fathers_point[i] == root){
+				if (points[i].el[plan] < limit){
+					medianLeft += points[i].el[next_plan];
+					fathers_point[i] = left;
+					left->point = i;
+					nb_left++;
+				}else{
+					medianRight += points[i].el[next_plan];
+					fathers_point[i] = right;
+					right->point = i;
+					nb_right++;
+				}
 			}
 		}
-	}
 
-	right->limit = medianRight/nb_right;
-	right->plan = next_plan;
-	left->limit = medianLeft/nb_left;
-	left->plan = next_plan;
+		right->limit = medianRight/nb_right;
+		right->plan = next_plan;
+		left->limit = medianLeft/nb_left;
+		left->plan = next_plan;
 
-	if (nb_right > 1){
-		right->point = -1;
-		build_rec_KD(points, right, fathers_point,  nb);
-	}
+		if (nb_right > 1){
+			right->point = -1;
+			stk[stk_ptr++] = right;
+			//build_rec_KD(points, right, fathers_point,  nb);
+		}
 
-	if (nb_left > 1){
-		left->point = -1;
-		build_rec_KD(points, left, fathers_point,  nb);
+		if (nb_left > 1){
+			left->point = -1;
+			stk[stk_ptr++] = left;
+			//build_rec_KD(points, left, fathers_point,  nb);
+		}
 	}
 }
 
 node *build_KD(vector *points, int nb){
-
 	for (int i=0; i<4000; i++){
 		pool[i].id = i;
 	}
@@ -99,8 +109,7 @@ void find(node *root, vector *vertics, int *verif){
 }
 
 void line_query(node *root, vector *vertics, float min, float max, char plan, int *count, int depth){
-	printf("call %d id %d \n", (*count)++, root->id);
-
+	printf("call %d depth %d \n", (*count)++, depth);
 	if (root->plan != plan){
 		if (root->left){
 		 	line_query(root->left, vertics, min, max, plan, count, depth + 1);
@@ -183,33 +192,70 @@ void nearest_linear(vector *vertics, vector *point, int nb){
 }
 
 void nearest(node *root, vector *vertics, vector *point, int *count, int depth, float *dist_min){
-	//printf("call %d id %d depth %d\n", (*count)++, root->id, depth);
-	(*count)++;
-	
-	if (root->point > -1){
-		vector dist = minus(point, vertics + root->point);
-		float maybe_dist = normalize(&dist);
-		if(maybe_dist < *dist_min){
-			*dist_min = maybe_dist;//printf("x %f nb call %d\n", vertics[root->point].x, *count); 
-			printf("min %f point %d call %d\n", *dist_min, root->point, *count);
-		}
-	}else{
-		if ( point->el[root->plan] > root->limit){
-			if (point->el[root->plan] + *dist_min >= root->limit && root->right){
-				 nearest(root->right, vertics, point, count, depth + 1, dist_min);
+	printf("call %d depth %d \n", (*count)++, depth);
+
+	float min = *dist_min;
+
+	node *stack[200];
+	float test_stack[200];
+
+	int stk_pointer = 0;
+	test_stack[stk_pointer] = -1;
+	stack[stk_pointer] = root;
+	stk_pointer++;
+
+	float left_condition  = point->el[root->plan] - root->limit;
+	float right_condition = root->limit - point->el[root->plan];
+
+	int k = 0;
+
+	int max_stack = 0;
+
+	while(stk_pointer){
+		k++;
+		do{
+			root = stack[--stk_pointer];
+		}while(test_stack[stk_pointer] > min && stk_pointer);
+
+		///if(stk_pointer > max_stack)max_stack = stk_pointer;
+
+		if (root->point > -1){
+			vector dist = minus(point, vertics + root->point);
+			float maybe_min = normalize(&dist);
+			if(maybe_min < min){
+				min = maybe_min;
+				printf("min %f point %d  call %d\n", min, root->point, k);
 			}
-			if (point->el[root->plan] - *dist_min <= root->limit && root->left){
-				 nearest(root->left, vertics, point, count, depth + 1, dist_min);
-			}
+		
 		}else{
-			if (point->el[root->plan] - *dist_min <= root->limit && root->left){
-				 nearest(root->left, vertics, point, count, depth + 1, dist_min);
-			}
-			if (point->el[root->plan] + *dist_min >= root->limit && root->right){
-				 nearest(root->right, vertics, point, count, depth + 1, dist_min);
+			if ( point->el[root->plan] > root->limit){
+
+				if (left_condition <= min && root->left){
+					stack[stk_pointer] = root->left;
+					test_stack[stk_pointer] = left_condition;
+					stk_pointer++;
+				}
+				if (right_condition <= min && root->right){
+					stack[stk_pointer] = root->right;
+					test_stack[stk_pointer] = right_condition;
+					stk_pointer++;
+				}
+
+			}else{
+				if (right_condition <= min && root->right){
+					stack[stk_pointer] = root->right;
+					test_stack[stk_pointer] = right_condition;
+					stk_pointer++;
+				}
+				if (left_condition <= min && root->left){
+					stack[stk_pointer] = root->left;
+					test_stack[stk_pointer] = left_condition;
+					stk_pointer++;
+				}
 			}
 		}
 	}
+	//printf("stack_height %d \n", max_stack);
 }
 
 
