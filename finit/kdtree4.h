@@ -191,7 +191,8 @@ void nearest_linear(vector *vertics, vector *point, int nb){
 	}
 }
 
-void nearest(node *root, vector *vertics, vector *point, int *count, int depth, float *dist_min){
+
+void nearest(node *root, vector *vertics, vector *point, int *count, int *depth, float *dist_min){
 	printf("call %d depth %d \n", (*count)++, depth);
 
 	float min = *dist_min;
@@ -204,50 +205,72 @@ void nearest(node *root, vector *vertics, vector *point, int *count, int depth, 
 	stack[stk_pointer] = root;
 	stk_pointer++;
 
-	float left_condition  = point->el[root->plan] - root->limit;
-	float right_condition = root->limit - point->el[root->plan];
 
 	int k = 0;
 
 	int max_stack = 0;
-
+	
+	
+	while(root->point == -1){
+		
+		if (point->el[root->plan] > root->limit){
+			root = root->right;
+			
+		}else{
+			root = root->left;
+		}
+	}
+	vector dist = minus(point, vertics + root->point);
+	min = normalize(&dist);
+	printf("min %f point %d \n", min, root->point);
+	
 	while(stk_pointer){
 		k++;
-		do{
+		
+		//do{
 			root = stack[--stk_pointer];
 		}while(test_stack[stk_pointer] > min && stk_pointer);
-
-		///if(stk_pointer > max_stack)max_stack = stk_pointer;
+		
+		//if(!stk_pointer)break;
+		if(stk_pointer > max_stack)max_stack = stk_pointer;
 
 		if (root->point > -1){
 			vector dist = minus(point, vertics + root->point);
 			float maybe_min = normalize(&dist);
+			
 			if(maybe_min < min){
 				min = maybe_min;
 				printf("min %f point %d  call %d\n", min, root->point, k);
 			}
 		
 		}else{
+			
+			float left_condition  = point->el[root->plan] - root->limit;
+			float right_condition = root->limit - point->el[root->plan];
+			
 			if ( point->el[root->plan] > root->limit){
-
-				if (left_condition <= min && root->left){
+				
+				if (point->el[root->plan] - min > root->limit && root->left){
 					stack[stk_pointer] = root->left;
 					test_stack[stk_pointer] = left_condition;
 					stk_pointer++;
 				}
-				if (right_condition <= min && root->right){
+				
+				if (point->el[root->plan] + min <= root->limit && root->right){
 					stack[stk_pointer] = root->right;
 					test_stack[stk_pointer] = right_condition;
 					stk_pointer++;
 				}
 
 			}else{
-				if (right_condition <= min && root->right){
+				
+				if (point->el[root->plan] + min > root->limit && root->right){
 					stack[stk_pointer] = root->right;
 					test_stack[stk_pointer] = right_condition;
 					stk_pointer++;
 				}
-				if (left_condition <= min && root->left){
+				
+				if (point->el[root->plan] - min <= root->limit && root->left){
 					stack[stk_pointer] = root->left;
 					test_stack[stk_pointer] = left_condition;
 					stk_pointer++;
@@ -255,7 +278,7 @@ void nearest(node *root, vector *vertics, vector *point, int *count, int depth, 
 			}
 		}
 	}
-	//printf("stack_height %d \n", max_stack);
+	printf("min %f call %d max_stack %d \n", min, k, max_stack);
 }
 
 

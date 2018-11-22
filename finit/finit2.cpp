@@ -1,12 +1,14 @@
 /* include the X library headers */
 //#include "Eigen/Dense"
 
-#include "kdtree2.h"
+#include "kdtree3.h"
 #include "finit3.h"
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/Xos.h>
 #include <time.h>
+#include <chrono>
+#include <iostream>
 
 #define H 800
 #define W 800
@@ -80,7 +82,7 @@ int main () {
 	XEvent event;		/* the XEvent declaration !!! */
 	KeySym key;		/* a dealie-bob to handle KeyPress Events */	
 
-	int total = 5000;
+	int total = 200;
 	init_x();
 	int iter = 0;
 	mesh3D obj;
@@ -133,10 +135,27 @@ int main () {
 	float lambda;
 
 	printf("%d \n", plane_intersection(drawing, &n, &o, &r, &lambda));
+	
+	//test select
+	vector_id *test_select = new vector_id[ico.nb];
+	
+	for(int i = 0; i < ico.nb; i++)test_select[i] = ico.vertics[i];
+	
+	double bof[9] = {21, 0, 3, 6, 7, 5, 19, 0, 94};
+	
+	vector_id res = kselect(test_select, ico.nb, ico.nb/2, 0);
+	
+	//qsort(test_select, ico.nb, sizeof(vector_id), compare<0>);
+	
+	//printf("median %f \n", test_select[ico.nb/2].x);
+	//printf("kselect %f \n",  kselect(bof, 9, 4, 0));
+	printf("kselect %f \n",  res.x);
 
+	delete[] test_select;
 	//test KD tree
 	int *verif = new int[ico.nb]();
 	int count=0;
+	int depth = 0;
 	//for (float l=-0.3; l < 0.4; l+= 0.001){
 		float dist = 2;
 		vector test_point = vec(0.001158, -0.430398, -0.53);
@@ -147,7 +166,7 @@ int main () {
 		//box_query(root, ico.vertics, (vector2D*)limit, &count, 0);
 		//printf("\n*************\n linear search \n");
 		//linear_box_query(ico.vertics, (vector2D*)limit, ico.nb);
-		nearest(root, ico.vertics, &test_point, &count, 0, &dist);
+		nearest(root, ico.vertics, &test_point, &count, &depth, &dist);
 
 		clock_t end = clock();
 
@@ -234,18 +253,32 @@ int main () {
 		//printVect(velocities, ico.nb);
 		//target.x = startx + 0.3*sin(iter*0.01);
 		reset(&buffer);
+		
+		auto start = std::chrono::high_resolution_clock::now();
 		node *root = build_KD(ico.vertics, ico.nb);
-		start = clock();
+		auto end = std::chrono::high_resolution_clock::now();
+		auto microseconds = std::chrono::duration_cast<std::chrono::microseconds>(end-start);
+		std::cout << "temps build kd " << microseconds.count() << "\n";
+	
+		start = std::chrono::high_resolution_clock::now();
 		dist = 2;
 		count = 0;
-		nearest(root, ico.vertics, &test_point, &count, 0, &dist);
-		end = clock();
-		printf("temps kd %f %d\n", (float)(end -start)/CLOCKS_PER_SEC, count);
-		start = clock();
-		nearest_linear( ico.vertics, &test_point, ico.nb);
-		end = clock();
-		printf("temps linear %f %d\n", (float)(end -start)/CLOCKS_PER_SEC, count);
-		if(iter > 100){
+		depth = 0;
+		nearest(root, ico.vertics, &test_point, &count, &depth, &dist);
+		
+		printf("depth %d \n", depth);
+		
+		end = std::chrono::high_resolution_clock::now();
+		microseconds = std::chrono::duration_cast<std::chrono::microseconds>(end-start);
+		std::cout << "temps kd " << microseconds.count() << "\n";
+		
+		start = std::chrono::high_resolution_clock::now();
+		nearest_linear(ico.vertics, &test_point, ico.nb);
+		end = std::chrono::high_resolution_clock::now();
+		microseconds = std::chrono::duration_cast<std::chrono::microseconds>(end-start);
+		std::cout << "temps linear " << microseconds.count() << "\n";
+		
+		if(iter > 10){
 			clock_t start = clock();
 
 			copy(ico.vertics, next_velocities, ico.nb);

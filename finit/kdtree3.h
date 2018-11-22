@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "../vector.h"
+#include<limits.h>
+#define MAXINT 2147483648
 
 struct node{
 	char plan;
@@ -31,17 +33,123 @@ int compare(const void * a, const void * b)
   if ( ((vector_id*)a)->el[DIM] <((vector_id*)b)->el[DIM] ) return -1; 
 }
 
+template <typename T>
+void swap(T *a, T *b){
+	T tp = *a;
+	*a = *b;
+	*b = tp;
+}
 
+double kselect(double *seq, int n, int k, char plan){
+	int i=0;
+	
+	//randome pivot
+	//swap(seq[0], seq[(int)(((double)rand())/MAXINT*(n-1))]);
+	double p = seq[0];
+	int t=0;
+	
+	while(t < n*n){
+		t++;
+		//i = 0;
+		//swap(seq + i , seq + i + (int)((double)rand()/RAND_MAX*(n - 1 - i)));
+		p=seq[i];
+		
+		while(seq[i] > seq[i+1] && i+1 < n){
+			t++;
+			swap(&seq[i], &seq[i+1]);
+			i++;
+		}
+		int j = i+1;
+		
+		while(j<n){
+			t++;
+			if (p >= seq[j]){
+				//printf("%d > %d\n", p, seq[j]);
+				swap(&seq[i+1], &seq[j]);
+				swap(&seq[i+1], &seq[i]);
+				i+=1;
+			}
+			j++;
+		}
+		//printf("i deuxieme %d k %d p.x %f\n", i, k, p.x);
+		
+		if(i == k){
+			printf("temps select %d \n", t);
+			return p;
+		}else if (k > i){
+			i++;
+			//seq = seq + i + 1;
+			//n = n - (i + 1);
+		}else{
+			n = i;
+			i--;
+		}
+	}
+	printf("temps select %d \n", t);
+}
+
+
+vector_id kselect(vector_id *seq, int n, int k, char plan){
+	int i=0;
+	
+	//randome pivot
+	//swap(seq[0], seq[(int)(((double)rand())/MAXINT*(n-1))]);
+	
+
+	vector_id p = seq[0];
+	int t=0;
+	int i_prev = 0;
+	
+	while(t< n*n){
+		t++;
+		i_prev = i;
+	
+		//swap(seq + i, seq + i + (int)(((double)rand())/MAXINT*(n - 1 - i)));
+		p=seq[i];
+		
+		while(seq[i].el[plan] > seq[i+1].el[plan] && i+1 < n){
+			t++;
+			swap(&seq[i], &seq[i+1]);
+			i++;
+		}
+		int j = i+1;
+		
+		while(j<n){
+			
+			if (p.el[plan] >= seq[j].el[plan]){
+				t++;
+				//printf("%d > %d\n", p, seq[j]);
+				swap(&seq[i+1], &seq[j]);
+				swap(&seq[i+1], &seq[i]);
+				i+=1;
+			}
+			j++;
+		}
+		
+		if(i == k){
+			//printf("temps select Vector %d \n", t);
+			return p;
+		}else if (i < k){
+			i++;
+		}else{
+			n = i;
+			i = i_prev;	
+		}
+		
+	}
+}
 
 
 node pool[4000];
 node *pool_pointer = pool;
 
-	void build_rec_KD(vector_id *points, node *root,  int nb){
+void build_rec_KD(vector_id *points, node *root,  int nb){
 
 	char plan = root->plan;
 	int next_plan = (plan+1)%3;
 	
+	int mid_point = nb/2;
+	/*
 	if(plan == 0){
 		qsort(points, nb, sizeof(vector_id), compare<0>);
 	}else if (plan == 1){
@@ -49,8 +157,9 @@ node *pool_pointer = pool;
 	}else{
 		qsort(points, nb, sizeof(vector_id), compare<2>);
 	}
+	*/
+	kselect(points, nb, mid_point, plan);
 	
-	int mid_point = nb/2;
 	root->limit = points[mid_point].el[plan];
 	root->point = points[mid_point].id;
 	
@@ -184,37 +293,35 @@ void nearest_linear(vector *vertics, vector *point, int nb){
 		if(n < min) {
 			min = n;
 			printf("min %f \n", min);
-		}
-		
+		}	
 	}
-	
 }
 
-void nearest(node *root, vector *vertics, vector *point, int *count, int depth, float *dist_min){
+void nearest(node *root, vector *vertics, vector *point, int *count, int *depth, float *dist_min){
+	*depth+=1;
 	//printf("call %d depth %d \n", (*count)++, depth);
 	
 	vector dist = minus(point, vertics + root->point);
 	float maybe_min = normalize(&dist);
 	if (maybe_min < *dist_min){
 		*dist_min = maybe_min;
-	 	//printf("min %f point %d \n", *dist_min, root->point);	
+	 	 printf("min %f point %d \n", *dist_min, root->point);	
 	}
 	if ( point->el[root->plan] > root->limit){
-		if (point->el[root->plan] + *dist_min >= root->limit && root->right){
-			 nearest(root->right, vertics, point, count, depth + 1, dist_min);
+		if (point->el[root->plan] + *dist_min > root->limit && root->right){
+			 nearest(root->right, vertics, point, count, depth, dist_min);
 		}
-		if (point->el[root->plan] - *dist_min <= root->limit && root->left){
-			 nearest(root->left, vertics, point, count, depth + 1, dist_min);
+		if (point->el[root->plan] - *dist_min < root->limit && root->left){
+			 nearest(root->left, vertics, point, count, depth, dist_min);
 		}
 	}else{
-		if (point->el[root->plan] - *dist_min <= root->limit && root->left){
-			 nearest(root->left, vertics, point, count, depth + 1, dist_min);
+		if (point->el[root->plan] - *dist_min < root->limit && root->left){
+			 nearest(root->left, vertics, point, count, depth, dist_min);
 		}
-		if (point->el[root->plan] + *dist_min >= root->limit && root->right){
-			 nearest(root->right, vertics, point, count, depth + 1, dist_min);
+		if (point->el[root->plan] + *dist_min > root->limit && root->right){
+			 nearest(root->right, vertics, point, count, depth, dist_min);
 		}
-	}
-		
+	}	
 }
 
 
