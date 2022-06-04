@@ -64,7 +64,8 @@ mesh3D *make_diamond(){
 	memcpy(diamond.normals, diamond_normals, diamond.nb*sizeof(vector));
 	memcpy(diamond.face, diamond_face,  diamond.nb_f*sizeof(int));
 
-	diamond.normals_f = NULL;
+	diamond.normals_f = (vector*)malloc(diamond.nb_f/3*sizeof(vector));
+	make_normal(&diamond);
 	for (int i = 0; i<diamond.nb; i++){
 		normalize(diamond.vertics + i);
 	}
