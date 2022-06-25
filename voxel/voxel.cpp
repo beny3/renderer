@@ -155,6 +155,8 @@ int main () {
 
 		mat[2]=(-sin(angle)*70);
 		mat[10]=(cos(angle)*70);
+		
+		print_mat9(mat);
 
 		matrix model = make_rot4( 0, PI/4, 0);
 		dir = vec(0.2, 0.2, 0);
@@ -164,7 +166,7 @@ int main () {
 		//make_ide4(mat4);
 		print_mat(model.data);
 		draw_cube(model.data, buffer);
-		//draw_mesh4(obj, buffer, mat, which_shape);
+		draw_mesh4(obj, buffer, mat, which_shape);
 		XPutImage(dis, win, gc, image, 0, 0, 0, 0, buffer.w, buffer.h);
 		//draw(drawing, faces, 1);
 		usleep(20000);

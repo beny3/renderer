@@ -63,7 +63,7 @@ void init_x() {
    	win=XCreateSimpleWindow(dis,DefaultRootWindow(dis),0,0, H, W, 5,black, white);
 	XSetStandardProperties(dis,win,"Howdy","Hi",None,NULL,0,NULL);
 	XSelectInput(dis, win, ExposureMask|ButtonPressMask|KeyPressMask);
-     gc=XCreateGC(dis, win, 0,0);        
+    gc=XCreateGC(dis, win, 0,0);        
 	XSetBackground(dis,gc,white);
 	XSetForeground(dis,gc,black);
 	XClearWindow(dis, win);
@@ -139,14 +139,14 @@ int main () {
 	make_convex(&obj,been_there, which_shape , 0, 1, 100);
 
 	//tessel test
-	mesh3D *sphere = make_diamond();
-	tessel(sphere);
-	tessel(sphere);
-	tessel(sphere);
+	mesh3D sphere = make_diamond("sphere");
+	tessel(&sphere);
+	tessel(&sphere);
+	tessel(&sphere);
 	//make_normal(sphere);
 
-	char *which_shape2 = new char[sphere->nb_f/3];
-	memset(which_shape2, 0, sphere->nb_f/3);
+	char *which_shape2 = new char[sphere.nb_f/3];
+	
 	//edge *edges = make_edge(sphere);
 
 	int debug = 0;
@@ -190,8 +190,8 @@ int main () {
 		//mult_vm(mat, ico.vertics, ico.vertics_trans, ico.nb);
 		//draw_mesh4(ico, buffer, mat, which_shape2);
 
-		mult_vm(mat, sphere->vertics, sphere->vertics_trans, sphere->nb);
-		draw_mesh4(*sphere, buffer, mat, which_shape2);
+		mult_vm(mat, sphere.vertics, sphere.vertics_trans, sphere.nb);
+		draw_mesh4(sphere, buffer, mat, which_shape2);
 
 		XPutImage(dis, win, gc, image, 0, 0, 0, 0, buffer.w, buffer.h);
 		//draw(drawing, faces, 1);

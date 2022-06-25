@@ -42,37 +42,6 @@ mesh3D diamond{
 };
 */
 
-
-mesh3D diamond;
-vector diamond_vertics[] = {{0,1,0}, {-1,0,1}, {1,0,1}, {1,0,-1}, {-1,0,-1}, {0, -1, 0}};
-vector diamond_vertics_t[] = {{0,1,0}, {-1,0,1}, {1,0,1}, {1,0,-1}, {-1,0,-1}, {0, -1, 0}};
-vector diamond_normals[] = {{0,1,0}, {-1,0,1}, {1,0,1}, {1,0,-1}, {-1,0,-1}, {0, -1, 0}};
-int diamond_face[]={1,2,0, 2,3,0, 3,4,0, 4,1,0, 1,2,5, 2,3,5, 3,4,5, 4,1,5};
-
-
-mesh3D *make_diamond(){
-
-	diamond.nb = 6;
-	diamond.nb_f = 24;
-	diamond.vertics = (vector*)malloc(diamond.nb*sizeof(vector));
-	diamond.vertics_trans = (vector*)malloc(diamond.nb*sizeof(vector));
-	diamond.normals = (vector*)malloc(diamond.nb*sizeof(vector));
-	diamond.face = (int*)malloc(diamond.nb_f*sizeof(int));
-
-	memcpy(diamond.vertics, diamond_vertics , diamond.nb*sizeof(vector));
-	memcpy(diamond.vertics_trans, diamond_vertics, diamond.nb*sizeof(vector));
-	memcpy(diamond.normals, diamond_normals, diamond.nb*sizeof(vector));
-	memcpy(diamond.face, diamond_face,  diamond.nb_f*sizeof(int));
-
-	diamond.normals_f = (vector*)malloc(diamond.nb_f/3*sizeof(vector));
-	make_normal(&diamond);
-	for (int i = 0; i<diamond.nb; i++){
-		normalize(diamond.vertics + i);
-	}
-	return &diamond;
-}
-
-
 edges_info make_edge(mesh3D *obj){
 
 	edge *edges = (edge*)malloc(sizeof(edge)*obj->nb_f);

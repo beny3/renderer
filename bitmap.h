@@ -7,13 +7,18 @@
 #define ID3(x,y,c,w) 3*((y)*w + (x)) + c
 #define IDS(x,y,w) ((y)*w + (x))
 
-typedef struct bitmap{
-	unsigned char *data;
-	float *zbuffer;
-	int w;
-	int h;
+struct bitmap{
+	bitmap(){};
+	bitmap(int w_, int h_):w(w_), h(w_){
+		data = (unsigned char*)malloc(h_*w_*4);
+		zbuffer = (float*)malloc(h_*w_*sizeof(float));
+	}
+	unsigned char *data = nullptr;
+	float *zbuffer = nullptr;
+	int w = 0;
+	int h = 0;
 
-} bitmap;
+};
 
 void reset(bitmap *buffer){
 	memset(buffer->data, 0, buffer->w*buffer->h*4);
