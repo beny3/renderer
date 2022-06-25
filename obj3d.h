@@ -7,21 +7,39 @@
 #include "bitmap.h"
 
 typedef struct mesh3D{
-	vector *vertics;
-	vector *vertics_trans;  
+    const char *name;
+	vector3D *vertics;
+	vector3D *vertics_trans;  
 	weight *w;
 	float *wf;
-	vector *normals;
-	vector *normals_f;	
+	vector3D *normals;
+	vector3D *normals_f;	
 	vector2D *v_text;
-	vector center;
+	vector3D center;
 	float radius;
 	int nb;
 	int nb_t;
 	int nb_f;
 	int *face;
+	char *which_shape;
 	bitmap texture;
 } mesh3D;
+
+void allocate_mesh3D(mesh3D *obj, int nb, int nb_f, int nb_t){
+	obj->nb = nb;
+	obj->nb_f = nb_f;
+	obj->nb_t = nb_t;
+
+	obj->vertics = new vector3D[obj->nb];
+	obj->normals = new vector3D[obj->nb];
+	obj->vertics_trans = new vector3D[obj->nb];
+	obj->w = new weight[obj->nb*3];
+	obj->which_shape = new char[obj->nb_f/3];
+    obj->normals_f = new vector3D[obj->nb_f/3];
+
+	obj->v_text = new vector2D[obj->nb_t];
+	obj->face = new int[obj->nb_f];
+}
 
 struct colition_hull{
 	mesh3D mesh;
@@ -31,15 +49,15 @@ struct colition_hull{
 };
 
 struct bounding_box{
-	vector zero;
+	vector3D zero;
 	float limits[3]={0,0,0};
 };
 
 struct physic{
-	vector position;
-	vector velocity;
-	vector moment;
-	vector rest_angle;
+	vector3D position;
+	vector3D velocity;
+	vector3D moment;
+	vector3D rest_angle;
 	float angular_vel;
 	float angle;
 	matrix mat;
@@ -64,16 +82,15 @@ bounding_box make_bounding_box(mesh3D *obj){
 	return out;
 }
 
-
 void make_normal(mesh3D *obj){
 
 	for (int i=0; i < obj->nb_f; i+=3){
 
-		vector ab = minus(&obj->vertics[obj->face[i+1]], &obj->vertics[obj->face[i]]);
-		vector ac = minus(&obj->vertics[obj->face[i+2]], &obj->vertics[obj->face[i]]);
+		vector3D ab = minus(&obj->vertics[obj->face[i+1]], &obj->vertics[obj->face[i]]);
+		vector3D ac = minus(&obj->vertics[obj->face[i+2]], &obj->vertics[obj->face[i]]);
 		normalize(&ac);
 		normalize(&ab);
-		vector n = cross(ab,ac);
+		vector3D n = cross(ab,ac);
 		
 		obj->normals_f[i/3] = n;
 		normalize(&obj->normals_f[i/3]);
@@ -89,10 +106,53 @@ void make_normal(mesh3D *obj){
 	}
 }
 
+vector diamond_vertics[] = {{0,1,0}, {-1,0,1}, {1,0,1}, {1,0,-1}, {-1,0,-1}, {0, -1, 0}};
+vector diamond_vertics_t[] = {{0,1,0}, {-1,0,1}, {1,0,1}, {1,0,-1}, {-1,0,-1}, {0, -1, 0}};
+vector diamond_normals[] = {{0,1,0}, {-1,0,1}, {1,0,1}, {1,0,-1}, {-1,0,-1}, {0, -1, 0}};
+int    diamond_face[] = {1,2,0, 2,3,0, 3,4,0, 4,1,0, 1,2,5, 2,3,5, 3,4,5, 4,1,5};
+
+vector triangle_vertics[] = {{-1,0,0}, {1,0,0}, {0,1,0}};
+vector triangle_vertics_t[] = {{-1,0,0}, {0,1,0}, {1,0,0}};
+vector triangle_normals[] = {{0,0,1}, {0,0,1}, {0,0,1}};
+int    triangle_face[] = {0,1,2};
+
+mesh3D make_diamond(const char *name){
+
+	mesh3D diamond;
+	diamond.name = name;
+	allocate_mesh3D(&diamond, 6, 24, 6);
+
+	memcpy(diamond.vertics,       diamond_vertics , diamond.nb*sizeof(vector));
+	memcpy(diamond.vertics_trans, diamond_vertics , diamond.nb*sizeof(vector));
+	memcpy(diamond.normals,       diamond_normals , diamond.nb*sizeof(vector));
+	memcpy(diamond.face,          diamond_face    , diamond.nb_f*sizeof(int));
+
+	make_normal(&diamond);
+	for (int i = 0; i<diamond.nb; i++){
+		normalize(diamond.vertics + i);
+	}
+	return diamond;
+}
+
+mesh3D make_triangle_obj(const char *name){
+
+	mesh3D triangle;
+	triangle.name = name;
+	allocate_mesh3D(&triangle, 3, 3, 3);
+
+	memcpy(triangle.vertics      , triangle_vertics , triangle.nb*sizeof(vector));
+	memcpy(triangle.vertics_trans, triangle_vertics , triangle.nb*sizeof(vector));
+	memcpy(triangle.normals      , triangle_normals , triangle.nb*sizeof(vector));
+	memcpy(triangle.face         , triangle_face    , triangle.nb_f*sizeof(int));
+
+	make_normal(&triangle);
+
+	return triangle;
+}
 
 void euler(physic *phy, float dt){
 
-	vector m = phy->moment;
+	vector3D m = phy->moment;
 	float theta = normalize(&m);
 
 	matrix rot;
@@ -113,7 +173,9 @@ void free_mesh3D(mesh3D *obj){
 }
 
 int read_mesh3D(mesh3D *obj, const char* name){
+
 	FILE *file;
+	obj->name = name;
 	char ligne[256];
 	ssize_t read;
 	int v=0;
@@ -126,34 +188,26 @@ int read_mesh3D(mesh3D *obj, const char* name){
 	if (file == NULL){
 		return -1;
 	}
-	obj->nb=0;
-	obj->nb_f=0;
-	obj->nb_t=0;
+	int nb=0;
+	int nb_f=0;
+	int nb_t=0;
 
 	while(fgets(ligne, 256, file) != NULL){
 		if (ligne[0]=='v' && ligne[1]==' '){
 
-			obj->nb++;
+			nb++;
 		}
 		if (ligne[0]=='v' && ligne[1]=='t'){
 
-			obj->nb_t++;
+			nb_t++;
 		}
 		if (ligne[0]=='f' ){
 
-			obj->nb_f+=3;
+			nb_f+=3;
 		}
 	}
-	printf("face number %d \n", obj->nb_f/3);
 
-	obj->vertics = new vector[obj->nb];
-	obj->normals = new vector[obj->nb];
-	obj->vertics_trans = new vector[obj->nb];
-	obj->w = new weight[obj->nb*3];
-
-	vector *vertics_trans; 
-	obj->v_text = new vector2D[obj->nb_t];
-	obj->face = new int[obj->nb_f];
+	allocate_mesh3D(obj, nb, nb_f, nb_t);
 	fseek(file,0,SEEK_SET);
 	obj->radius = 0;
 
@@ -177,17 +231,15 @@ int read_mesh3D(mesh3D *obj, const char* name){
 			f+=3;
 		}
 	}
+
 	fclose(file);
 	//calcul normal
-	obj->normals_f = new vector[f/3];
 	make_normal(obj);
-
 	return 0;
-
 }
 
 void compute_center(mesh3D *obj){
-	vector center=vec(0,0,0);
+	vector3D center=vec(0,0,0);
 	for (int i = 0; i< obj->nb; i++){
 		acc(&center, &obj->vertics[i]);
 	}
@@ -201,11 +253,11 @@ mesh3D make_cylinder(float x, float y, float z, float sy, float  r, int nb_l, in
 	cylinder.nb = nb_l*nb_s;
 	cylinder.nb_f = (nb_s-1)*nb_l*2*3;
 
-	vector *v=new vector[cylinder.nb];
+	vector3D *v=new vector3D[cylinder.nb];
 	int *f=new int[cylinder.nb_f];
 
 	cylinder.vertics = v;
-	cylinder.vertics_trans = new vector[cylinder.nb];
+	cylinder.vertics_trans = new vector3D[cylinder.nb];
 	cylinder.face  = f;
 
 	int k=0;
@@ -246,10 +298,10 @@ mesh3D make_rect(float x, float y, float z, float sx, float sy, float sz){
 	mesh3D rect;
 	rect.nb = 8;
 	rect.nb_f = 12*3;
-	rect.vertics = new vector[8];
-	rect.vertics_trans = new vector[8];
+	rect.vertics = new vector3D[8];
+	rect.vertics_trans = new vector3D[8];
 	rect.face = new int[12*3];
-	vector *v = rect.vertics;
+	vector3D *v = rect.vertics;
 	int *f = rect.face;
 	v[0] = vec(x - sx, y - sy, z-sz);
 	v[1] = vec(x + sx, y - sy, z-sz);
@@ -283,7 +335,6 @@ mesh3D make_rect(float x, float y, float z, float sx, float sy, float sz){
 
 	return rect;
 }
-
 
 colition_hull make_graph(mesh3D obj){
 	int nb = obj.nb;

@@ -8,14 +8,14 @@
 #include "obj3d.h"
 
 
-void draw_tri(vector2D face[3],vector normals[3], vector normal_f, float z[3], vector2D &vt1, vector2D &vt2, vector2D &vt3, bitmap &buffer, int r, int g, int b, vector *light, int c){
+void draw_tri(vector2D face[3],vector3D normals[3], vector3D normal_f, float z[3], vector2D &vt1, vector2D &vt2, vector2D &vt3, bitmap &buffer, int r, int g, int b, vector3D *light, int c){
 
 	int maxx= face[0].x;
 	int minx= face[1].x;
 	int maxy= face[0].y;
 	int miny= face[1].y;
-	vector coord;
-	vector n;
+	vector3D coord;
+	vector3D n;
 	vector2D p;
 	vector2D ab = minus2D(&face[1], &face[0]);
 	vector2D ac = minus2D(&face[2], &face[0]);
@@ -89,15 +89,15 @@ void draw_tri(vector2D face[3],vector normals[3], vector normal_f, float z[3], v
 }
 
 
-void draw_tri(vector2D face[3], vector normals[3], float z[3], vector2D &vt1, vector2D &vt2, vector2D &vt3, bitmap &buffer, bitmap &texture, vector *light, int c){
+void draw_tri(vector2D face[3], vector3D normals[3], float z[3], vector2D &vt1, vector2D &vt2, vector2D &vt3, bitmap &buffer, bitmap &texture, vector3D *light, int c){
 	
 
 	int maxx= face[0].x;
 	int minx= face[1].x;
 	int maxy= face[0].y;
 	int miny= face[1].y;
-	vector coord;
-	vector n;
+	vector3D coord;
+	vector3D n;
 	vector2D p;
 	vector2D ab = minus2D(&face[1], &face[0]);
 	vector2D ac = minus2D(&face[2], &face[0]);
@@ -203,11 +203,11 @@ void draw_dir(bitmap buffer, float mat[16]){
 }
 void draw_mesh4(mesh3D &obj, bitmap buffer, float mat[16]){
 	vector2D face[3];
-	vector normal[3];
+	vector3D normal[3];
 	int sx = buffer.w/2;
 	int sy = buffer.h/2;
 	float z[3];
-	vector light = vec(-1,0.5, -1);
+	vector3D light = vec(-1,0.5, -1);
 	normalize(&light);
 	//print_mat(mat);
 
@@ -233,11 +233,11 @@ void draw_mesh4(mesh3D &obj, bitmap buffer, float mat[16]){
 
 void draw_mesh4(mesh3D &obj, bitmap buffer, float mat[16], char *which_shape){
 	vector2D face[3];
-	vector normal[3];
+	vector3D normal[3];
 	int sx = buffer.w/2;
 	int sy = buffer.h/2;
 	float z[3];
-	vector light = vec(-1,0.5, -1);
+	vector3D light = vec(-1,0.5, -1);
 	normalize(&light);
 	//print_mat(mat);
 
@@ -269,11 +269,11 @@ void draw_mesh4(mesh3D &obj, bitmap buffer, float mat[16], char *which_shape){
 
 void draw_mesh(mesh3D &obj, bitmap buffer, float mat[9]){
 	vector2D face[3];
-	vector normal[3];
+	vector3D normal[3];
 	int sx = buffer.w/2;
 	int sy = buffer.h/2;
 	float z[3];
-	vector light = vec(0,0,-1);	
+	vector3D light = vec(0,0,-1);	
 	
 	for(int i=0; i<obj.nb_f; i+=3){
 		for (int k=0; k<3; k++){
@@ -294,20 +294,20 @@ void draw_mesh(mesh3D &obj, bitmap buffer, float mat[9]){
 
 void draw_cube(float  mat[16], bitmap buffer){
 	float f = 500;
-	vector light = vec(-1,-1,1);
+	vector3D light = vec(-1,-1,1);
 	matrix invers_model = inv_m(mat);
 	//print_mat( mat );
 	float z, dz;
 	matrix ide = mult_m(mat , invers_model.data);
 	print_mat(ide.data);
-	vector n;
+	vector3D n;
 
 	for (float y=0; y < 2; y += 1/256.){
 		for (float x=0; x < 2; x += 1/256.){
-			vector eye_o = vec(x, y, 0);
-			vector view_line_o = vec(x/(f), y/(f), 1);
-			vector eye  = mult_vm(invers_model.data, eye_o);
-			vector view_line = mult_vm(invers_model.data, view_line_o);
+			vector3D eye_o = vec(x, y, 0);
+			vector3D view_line_o = vec(x/(f), y/(f), 1);
+			vector3D eye  = mult_vm(invers_model.data, eye_o);
+			vector3D view_line = mult_vm(invers_model.data, view_line_o);
 
 			//printVect(view_line);
 			//printVect(eye);

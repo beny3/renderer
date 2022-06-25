@@ -1,6 +1,7 @@
 #ifndef VECTOR
 #define VECTOR
 #include<stdlib.h>
+#include<stdio.h>
 #include<math.h>
 #define PI (3.14159265)
 
@@ -13,7 +14,7 @@ typedef struct vector{
 		};
 		float el[3];
 	};
-} vector;
+} vector3D;
 
 typedef struct vector2D{
 	float x;
@@ -52,7 +53,7 @@ float dot(vector4D *a, vector4D *b){
 	return a->x*b->x + a->y*b->y + a->z*b->z + a->phi*b->phi;
 }
 
-float dot(vector *a, vector *b){
+float dot(vector3D *a, vector3D *b){
 	return a->x*b->x + a->y*b->y + a->z*b->z;
 }
 
@@ -64,18 +65,18 @@ float quad_sol2(float a,float b,float c){
 	return (-b - sqrt(b*b -4*a*c))/(2*a);
 }
 
-float acc(vector *a, vector *b){
+float acc(vector3D *a, vector3D *b){
 	a->x+=b->x;
 	a->y+=b->y;
 	a->z+=b->z;
 }
 
-float acc(vector *a, vector *b, float alpha){
+float acc(vector3D *a, vector3D *b, float alpha){
 	a->x+=alpha*b->x;
 	a->y+=alpha*b->y;
 	a->z+=alpha*b->z;
 }
-float acc_one_to_many(vector *a, vector *one, float alpha, int n){
+float acc_one_to_many(vector3D *a, vector3D *one, float alpha, int n){
 	for (int i=0; i<n; i++){
 		a[i].x+= alpha*one->x;
 		a[i].y+= alpha*one->y;
@@ -83,7 +84,7 @@ float acc_one_to_many(vector *a, vector *one, float alpha, int n){
 	}
 }
 
-float acc(vector *a, vector *b, float alpha, int n){
+float acc(vector3D *a, vector3D *b, float alpha, int n){
 	for (int i=0; i<n; i++){
 		a[i].x+= alpha*b[i].x;
 		a[i].y+= alpha*b[i].y;
@@ -91,13 +92,21 @@ float acc(vector *a, vector *b, float alpha, int n){
 	}
 }
 
-float sub(vector *a, vector *b){
+float sub(vector3D *a, vector3D *b){
 	a->x-=b->x;
 	a->y-=b->y;
 	a->z-=b->z;
 }
 
-float sub_overWrite_left(vector *a, vector *b){
+float proj(vector3D *point, vector3D *n){
+	//point = point - ((point)'*n)*n;
+	float f = dot(point, n);
+	point->x -= f*n->x;
+	point->y -= f*n->y;
+	point->z -= f*n->z;
+}
+
+float sub_overWrite_left(vector3D *a, vector3D *b){
 	b->x = a->x - b->x;
 	b->y = a->y - b->y;
 	b->z = a->z - b->z;
@@ -111,23 +120,23 @@ vector2D vec2D(float x, float y){
 }
 
 
-vector vec(float x, float y, float z){
-	vector out;
+vector3D vec(float x, float y, float z){
+	vector3D out;
 	out.x=x;
 	out.y=y;
 	out.z=z;
 	return out;
 }
 
-vector linear(vector *a, vector *b, float alpha, float beta){
-	vector out;
+vector3D linear(vector3D *a, vector3D *b, float alpha, float beta){
+	vector3D out;
 	out.x = alpha*a->x+beta*b->x;
 	out.y = alpha*a->y+beta*b->y;
 	out.z = alpha*a->z+beta*b->z;
 	return out;
 }
 
-void reflect(vector *a, vector *n){
+void reflect(vector3D *a, vector3D *n){
 	float p = dot(a, n);
 	/*
 	a->x=n->x;
@@ -140,16 +149,16 @@ void reflect(vector *a, vector *n){
 
 }
 
-vector matrixMul(vector n[3], vector *b){
-	vector out;
+vector3D matrixMul(vector3D n[3], vector3D *b){
+	vector3D out;
 	out.x = b->x*n[0].x + b->y*n[2].x + b->z*n[1].x;
 	out.y = b->x*n[0].y + b->y*n[2].y + b->z*n[1].y;
 	out.z = b->x*n[0].z + b->y*n[2].z + b->z*n[1].z;
 	return out;
 }
 
-vector matrixMul2D(vector2D *n1, vector2D *n2, vector2D *n3, vector *b){
-	vector out;
+vector3D matrixMul2D(vector2D *n1, vector2D *n2, vector2D *n3, vector3D *b){
+	vector3D out;
 	out.x = b->x*n1->x + b->y*n2->x + b->z*n3->x;
 	out.y = b->x*n1->y + b->y*n2->y + b->z*n3->y;
 	return out;
@@ -160,7 +169,7 @@ void scalar(vector2D *a, float alpha){
 	a->y *= alpha;
 }
 
-void scalar(vector *a, float alpha){
+void scalar(vector3D *a, float alpha){
 
 	a->x *= alpha;
 	a->y *= alpha;
@@ -183,43 +192,43 @@ float normalize(T *v){
 	return norm;
 }
 
-vector copy(vector *a){
-	vector out;
+vector3D copy(vector3D *a){
+	vector3D out;
 	out.x = a->x;
 	out.y = a->y;
 	out.z = a->z;
 	return out;
 }
 
-void swap( vector **a, vector **b){
-	vector *tp = *a;
+void swap( vector3D **a, vector3D **b){
+	vector3D *tp = *a;
 	*a = *b;
 	*b = tp;
 }
 
-void copy(vector *pos, vector *vel, int n){
+void copy(vector3D *pos, vector3D *vel, int n){
 	for (int i=0; i<n; i++){
 		vel[i] = pos[i];
 	}
 }
 
-void set_zero(vector *vel, int n){
+void set_zero(vector3D *vel, int n){
 	for (int i=0; i<n; i++){
 		vel[i] = vec(0,0,0);
 	}
 }
 
 
-vector add(vector *a, vector *b, float dt){
-	vector out;
+vector3D add(vector3D *a, vector3D *b, float dt){
+	vector3D out;
 	out.x = a->x + b->x*dt;
 	out.y = a->y + b->y*dt;
 	out.z = a->z + b->z*dt;
 	return out;
 }
 
-vector add(vector *a, vector *b){
-	vector out;
+vector3D add(vector3D *a, vector3D *b){
+	vector3D out;
 	out.x = a->x + b->x;
 	out.y = a->y + b->y;
 	out.z = a->z + b->z;
@@ -234,16 +243,16 @@ vector2D add(vector2D *a, vector2D *b){
 	return out;
 }
 
-vector inv(vector *a){
-	vector out;
+vector3D inv(vector3D *a){
+	vector3D out;
 	out.x = -a->x;
 	out.y = -a->y;
 	out.z = -a->z;
 	return out;
 }
 
-vector minus(vector *a, vector *b){
-	vector out;
+vector3D minus(vector3D *a, vector3D *b){
+	vector3D out;
 	out.x = a->x - b->x;
 	out.y = a->y - b->y;
 	out.z = a->z - b->z;
@@ -267,16 +276,25 @@ vector2D minus2D(vector2D *a, vector2D *b){
 	return out;
 }
 
-vector cross(vector &a, vector &b){
-	vector out;
+float inline dist2Dsquare(vector2D *a, vector2D *b){
+	return (a->x - b->x)*(a->x - b->x) + (a->y - b->y)*(a->y - b->y);
+}
+
+float inline dist3Dsquare(vector3D *a, vector3D *b){
+	return (a->x - b->x)*(a->x - b->x) + (a->y - b->y)*(a->y - b->y)  + (a->z - b->z)*(a->z - b->z);
+}
+
+
+vector3D cross(vector3D &a, vector3D &b){
+	vector3D out;
 	out.x = a.y*b.z - a.z*b.y;
 	out.y = a.z*b.x - a.x*b.z;
 	out.z = a.x*b.y - a.y*b.x;
 	return out;
 }
 
-vector cross(vector &a, vector &b, float s){
-	vector out;
+vector3D cross(vector3D &a, vector3D &b, float s){
+	vector3D out;
 	out.x = s*(a.y*b.z - a.z*b.y);
 	out.y = s*(a.z*b.x - a.x*b.z);
 	out.z = s*(a.x*b.y - a.y*b.x);
@@ -287,11 +305,11 @@ void printVect(vector4D &v){
 	printf("x:%f y:%f z:%f  phi:%f\n",v.x,v.y,v.z, v.phi);
 }
 
-void printVect(vector &v){
+void printVect(vector3D &v){
 	printf("x:%f y:%f z:%f\n",v.x,v.y,v.z);
 }
 
-void printVect(vector *v,int n){
+void printVect(vector3D *v,int n){
 	for (int i= 0; i<n; i++){
 		printVect(v[i]);
 	}
@@ -314,9 +332,9 @@ void print_mat(float mat[16]){
 void print_mat9(float mat[9]){
 	for (int i=0; i<3; i++){
 		for (int j=0; j<3; j++){
-			printf("%2.2f |",mat[3*i + j]);
+			printf("%2.8f ,",mat[3*i + j]);
 		}
-		printf("\n");
+		printf(";\n");
 	}
 	printf("\n");
 }
@@ -343,8 +361,7 @@ void make_scale(float mat[16], float v){
 	}
 	mat[15] = 1;
 }
-
-vector2D solve_uv(vector *u, vector *v, vector *b){
+vector2D solve_uv(vector3D *u, vector3D *v, vector3D *b){
 
 	int coord0 = 0, coord1 = 1;
 
@@ -370,7 +387,7 @@ vector2D solve_uv(vector *u, vector *v, vector *b){
 }
 
 
-int plane_intersection(vector *a, vector *n, vector *o, vector *r, float *lambda_out){
+int plane_intersection(vector3D *a, vector3D *n, vector3D *o, vector3D *r, float *lambda_out){
 
 	*lambda_out = 0;
 
@@ -391,16 +408,16 @@ int plane_intersection(vector *a, vector *n, vector *o, vector *r, float *lambda
 }
 
 
-int triangle_intersection(vector *a, vector *b, vector *c, vector *n, vector *o, vector *r){
+int triangle_intersection(vector3D *a, vector3D *b, vector3D *c, vector3D *n, vector3D *o, vector3D *r){
 
 	float lambda = (dot(a,n) - dot(o,n))/dot(r,n);
 
 	if (lambda >= 0 && lambda <= 1){
-		vector p = vec(r->x*lambda, r->y*lambda, r->z*lambda);
+		vector3D p = vec(r->x*lambda, r->y*lambda, r->z*lambda);
 		acc(&p, o);
 		sub(&p, a);
-		vector ab = minus(b,a);
-		vector ac = minus(c,a);
+		vector3D ab = minus(b,a);
+		vector3D ac = minus(c,a);
 		vector2D uv = solve_uv(&ab, &ac, &p);
 		if (uv.x >= 0 && uv.x <= 1 && uv.y >= 0 && uv.y <= 1) return 1; 
 	}
@@ -408,8 +425,8 @@ int triangle_intersection(vector *a, vector *b, vector *c, vector *n, vector *o,
 	return 0;
 }
 
-vector2D inv_vm_p(float mat[16], vector &x){
-	vector xx;
+vector2D inv_vm_p(float mat[16], vector3D &x){
+	vector3D xx;
 	vector2D y;
 	xx.x = x.x - mat[3 ];
 	xx.y = x.y - mat[7 ];
@@ -422,9 +439,9 @@ vector2D inv_vm_p(float mat[16], vector &x){
 	return y;
 }
 
-vector inv_vm(float mat[16], vector &x){
-	vector xx;
-	vector y;
+vector3D inv_vm(float mat[16], vector3D &x){
+	vector3D xx;
+	vector3D y;
 	xx.x = x.x - mat[3 ];
 	xx.y = x.y - mat[7 ];
 	xx.z = x.z - mat[11];
@@ -442,8 +459,8 @@ void mult_sm(float mat[16], float alpha){
 	}
 }
 
-vector mult_vm(float mat[16], vector2D &x){
-	vector y; 
+vector3D mult_vm(float mat[16], vector2D &x){
+	vector3D y; 
 	float *yy=(float*)&y;
 	for (int i=0; i<12; i+=4){
 		yy[i/4] = mat[0 + i]*x.x + mat[1 + i]*x.y + mat[3 + i];
@@ -452,8 +469,8 @@ vector mult_vm(float mat[16], vector2D &x){
 }
 
 
-vector mult_vm9(float mat[9], vector &x){
-	vector y; 
+vector3D mult_vm9(float mat[9], vector3D &x){
+	vector3D y; 
 	float *yy=(float*)&y;
 	for (int i=0; i<9; i+=3){
 		yy[i/3] = mat[0 + i]*x.x + mat[1 + i]*x.y + mat[2 + i]*x.z;
@@ -461,8 +478,8 @@ vector mult_vm9(float mat[9], vector &x){
 	return y;
 }
 
-vector mult_vm(float mat[16], vector &x){
-	vector y; 
+vector3D mult_vm(float mat[16], vector3D &x){
+	vector3D y; 
 	float *yy=(float*)&y;
 	for (int i=0; i<12; i+=4){
 		yy[i/4] = mat[0 + i]*x.x + mat[1 + i]*x.y + mat[2 + i]*x.z + mat[3 + i];
@@ -470,9 +487,9 @@ vector mult_vm(float mat[16], vector &x){
 	return y;
 }
 
-void mult_vm(float mat[16], vector *in, int n){
+void mult_vm(float mat[16], vector3D *in, int n){
 	for (int k=0; k<n; k++){
-		vector x=in[k]; 
+		vector3D x=in[k]; 
 		float *y=(float*)&in[k];
 		for (int i=0; i<12; i+=4){
 			y[i/4] = mat[0 + i]*x.x + mat[1 + i]*x.y + mat[2 + i]*x.z + mat[3 + i];
@@ -480,7 +497,7 @@ void mult_vm(float mat[16], vector *in, int n){
 	}
 }
 
-void mult_vm(float mat[16], vector *in, vector *out, int n){
+void mult_vm(float mat[16], vector3D *in, vector3D *out, int n){
 	for (int k=0; k<n; k++){
 		float *y=(float*)&out[k];
 		for (int i=0; i<12; i+=4){
@@ -489,8 +506,8 @@ void mult_vm(float mat[16], vector *in, vector *out, int n){
 	}
 }
 
-void mult_vm(float *mat_list, vector *in, vector *out, float *W, int n, int nb_bone){
-	vector tpv;
+void mult_vm(float *mat_list, vector3D *in, vector3D *out, float *W, int n, int nb_bone){
+	vector3D tpv;
 	float* tp = (float*)&tpv; 
 	float w, *mat, *y;
 
@@ -520,8 +537,8 @@ void mult_vm(float *mat_list, vector *in, vector *out, float *W, int n, int nb_b
 	}
 }
 
-void mult_vm(float *mat_list, vector *in, vector *out, weight *W, int n){
-	vector tpv;
+void mult_vm(float *mat_list, vector3D *in, vector3D *out, weight *W, int n){
+	vector3D tpv;
 	float* tp = (float*)&tpv; 
 	////mmmmmm
 
@@ -552,13 +569,13 @@ void mult_vm(float *mat_list, vector *in, vector *out, weight *W, int n){
 	}
 }
 
-void make_mov4(float mat[16], vector &dir){
+void make_mov4(float mat[16], vector3D &dir){
 	mat[3]=dir.x;
 	mat[7]=dir.y;
 	mat[11]=dir.z;
 }
 
-void make_rot4_u(float m[16], vector *u, float a){
+void make_rot4_u(float m[16], vector3D *u, float a){
 
 	m[0] = ( cos(a) + u->x*u->x*(1-cos(a)) );
 	m[1] = u->y*u->x*(1 - cos(a)) + u->z*sin(a);
@@ -586,6 +603,12 @@ void scale(float m[16], float s){
 	}	
 }
 
+void scale3(float m[9], float s){
+	for (int i=0; i<9; i++){
+		m[i]*= s;
+	}	
+}
+
 matrix scale_copy(float m[16], float s){
 	matrix out;
 	for (int i=0; i<16; i++){
@@ -602,14 +625,14 @@ matrix make_rot4( float a, float b, float c){
 	m[2] = -cos(b)*sin(c);
 	m[3] = 0;
 		
-	m[4]  =  sin(a)*cos(b);
-	m[5]  =  -(-cos(a)*cos(b));
-	m[6]  =  sin(b);
+	m[4] =  sin(a)*cos(b);
+	m[5] =  -(-cos(a)*cos(b));
+	m[6] =  sin(b);
 	m[7] = 0;
 		
 	m[8]  =  cos(a)*sin(c) - sin(a)*sin(b)*cos(c);
 	m[9]  =  -(sin(a)*sin(c) + cos(a)*sin(b)*cos(c));
-	m[10]  =  cos(b)*cos(c);
+	m[10] =  cos(b)*cos(c);
 	m[11] = 0;
 
 	m[12] = 0;
@@ -618,6 +641,44 @@ matrix make_rot4( float a, float b, float c){
 	m[15] = 1;
 
 	return mat;
+}
+
+void rotate4( float a, float b, float c, float m[16]){
+
+	m[0] =  cos(a)*cos(c) + sin(a)*sin(b)*sin(c);
+	m[1] = -(sin(a)*cos(c) - cos(a)*sin(b)*sin(c));
+	m[2] = -cos(b)*sin(c);
+	m[3] = 0;
+		
+	m[4] = sin(a)*cos(b);
+	m[5] = -(-cos(a)*cos(b));
+	m[6] = sin(b);
+	m[7] = 0;
+		
+	m[8]  = cos(a)*sin(c) - sin(a)*sin(b)*cos(c);
+	m[9]  = -(sin(a)*sin(c) + cos(a)*sin(b)*cos(c));
+	m[10] = cos(b)*cos(c);
+	m[11] = 0;
+
+	m[12] = 0;
+	m[13] = 0;
+	m[14] = 0;
+	m[15] = 1;
+}
+
+void make_rot3( float a, float b, float c, float m[9]){
+
+	m[0] =  cos(a)*cos(c) + sin(a)*sin(b)*sin(c);
+	m[1] =  -(sin(a)*cos(c) - cos(a)*sin(b)*sin(c));
+	m[2] = -cos(b)*sin(c);
+		
+	m[3] =  sin(a)*cos(b);
+	m[4] =  -(-cos(a)*cos(b));
+	m[5] =  sin(b);
+		
+	m[6] =  cos(a)*sin(c) - sin(a)*sin(b)*cos(c);
+	m[7] =  -(sin(a)*sin(c) + cos(a)*sin(b)*cos(c));
+	m[8] =  cos(b)*cos(c);
 }
 
 matrix3 transpose9(float a[9]){
