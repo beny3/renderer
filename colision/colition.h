@@ -13,28 +13,28 @@
 	}
 
 struct tuple{
-	vector a;
-	vector b;
-	vector c;
+	vector3D a;
+	vector3D b;
+	vector3D c;
 };
 
 struct Simplex{
-	vector D;
-	vector data[4];
+	vector3D D;
+	vector3D data[4];
 	int s_last = -1;
 };
 
-float distance(vector *A, vector *D, vector *Dn){
-	vector AXD = cross(*A, *Dn);
+float distance(vector3D *A, vector3D *D, vector3D *Dn){
+	vector3D AXD = cross(*A, *Dn);
 	return dot(D, A);// + (1./sqrt(dot(&AXD, &AXD)));
 };
 
-vector support2(vector *D, vector *A, int na, vector *B, int nb){
+vector3D support2(vector3D *D, vector3D *A, int na, vector3D *B, int nb){
 	float max = -100000000;
-	vector Dn = *D;
+	vector3D Dn = *D;
 	normalize(&Dn);
-	vector *AB = new vector[nb*na];
-	vector *arMax = AB;
+	vector3D *AB = new vector3D[nb*na];
+	vector3D *arMax = AB;
 
 	for (int a=0; a<na; ++a){
 		for (int b=0; b<nb; ++b){
@@ -50,17 +50,17 @@ vector support2(vector *D, vector *A, int na, vector *B, int nb){
 	return *arMax;
 }
 
-vector support(vector *D, vector *A, int na, vector *B, int nb){
-	vector D_ = inv(D);
-	vector Dn = *D;
+vector3D support(vector3D *D, vector3D *A, int na, vector3D *B, int nb){
+	vector3D D_ = inv(D);
+	vector3D Dn = *D;
 	normalize(&Dn);
-	vector Dn_ = inv(&Dn);
+	vector3D Dn_ = inv(&Dn);
 
 	float s  = distance(A, D, &Dn);
 	float max = s;
 
-	vector *argmaxA = A; 
-	vector *argmaxB = B;
+	vector3D *argmaxA = A; 
+	vector3D *argmaxB = B;
 
 	for (int i=1; i<na; i++){
 		s = distance(&A[i], D, &Dn);
@@ -89,7 +89,7 @@ vector support(vector *D, vector *A, int na, vector *B, int nb){
 void do_simplex(Simplex *simplexS, int *sign_n){
 
 	int s_last = simplexS->s_last;
-	vector *simplex = simplexS->data;
+	vector3D *simplex = simplexS->data;
 
 	if(s_last == -1){
 		//simplexS->D = vec(0,1,0);
@@ -101,11 +101,11 @@ void do_simplex(Simplex *simplexS, int *sign_n){
 
 	}else if(s_last == 1){
 	
-		vector ab = minus( &simplex[0], &simplex[1]);
-		vector ao = inv(&simplex[1]);
+		vector3D ab = minus( &simplex[0], &simplex[1]);
+		vector3D ao = inv(&simplex[1]);
 
 		if ( dot(&ab, &ao) >= 0 ){
-			vector abXao = cross(ab, ao);
+			vector3D abXao = cross(ab, ao);
 			simplexS->D = cross(abXao, ab);
 			simplexS->s_last = 2;
 		}else{
@@ -117,18 +117,18 @@ void do_simplex(Simplex *simplexS, int *sign_n){
 	}else if (s_last == 2){
 
 		//cas triangle
-		vector ao = inv(&simplex[2]);
-		vector ab = minus(&simplex[1], &simplex[2]);
-		vector ac = minus(&simplex[0], &simplex[2]);
+		vector3D ao = inv(&simplex[2]);
+		vector3D ab = minus(&simplex[1], &simplex[2]);
+		vector3D ac = minus(&simplex[0], &simplex[2]);
 
-		vector n = cross(ab, ac);
-		vector nXac = cross(n, ac);
-		vector abXn = cross(ab, n);
+		vector3D n = cross(ab, ac);
+		vector3D nXac = cross(n, ac);
+		vector3D abXn = cross(ab, n);
 
 		//outside plan aco
 		if (dot(&nXac, &ao) > 0){
 			if ( dot(&ac, &ao) > 0 ){
-				vector acXao = cross(ac, ao);
+				vector3D acXao = cross(ac, ao);
 				simplexS->D = cross(acXao, ac);
 				simplex[1]=simplex[2];
 				simplexS->s_last = 2;		
@@ -142,7 +142,7 @@ void do_simplex(Simplex *simplexS, int *sign_n){
 
 		 	if ( dot(&ab, &ao) > 0 ){
 				printf("out_abo\n");
-				vector abXao = cross(ab, ao);
+				vector3D abXao = cross(ab, ao);
 				simplexS->D = cross(abXao, ab);
 				simplex[0]=simplex[1];
 				simplex[1]=simplex[2];
@@ -169,12 +169,12 @@ void do_simplex(Simplex *simplexS, int *sign_n){
 		
 	}else{ //s_last == 3
 		
-		vector bc = minus(&simplex[1], &simplex[0]);
-		vector ab = minus(&simplex[2], &simplex[1]);
-		vector ac = minus(&simplex[0], &simplex[2]);
+		vector3D bc = minus(&simplex[1], &simplex[0]);
+		vector3D ab = minus(&simplex[2], &simplex[1]);
+		vector3D ac = minus(&simplex[0], &simplex[2]);
 
-		vector top_to_base = minus(&simplex[1], &simplex[3]);
-		vector tpX = cross(bc, top_to_base, *sign_n);
+		vector3D top_to_base = minus(&simplex[1], &simplex[3]);
+		vector3D tpX = cross(bc, top_to_base, *sign_n);
 		
 		printf("orto %f %f \n", tpX.x*bc.x + tpX.y*bc.y + tpX.z*bc.z, dot(&tpX, &top_to_base));
  
@@ -214,15 +214,15 @@ void do_simplex(Simplex *simplexS, int *sign_n){
 }
 
 
-int gjk(vector *A, int na, vector *B, int nb, Simplex *simplex, vector *AB){
+int gjk(vector3D *A, int na, vector3D *B, int nb, Simplex *simplex, vector3D *AB){
 	
-	vector D_prev = simplex->D;
+	vector3D D_prev = simplex->D;
 	/*
-	vector invS;
-	vector ab;
-	vector ac;
-	vector n;
-	vector ao;
+	vector3D invS;
+	vector3D ab;
+	vector3D ac;
+	vector3D n;
+	vector3D ao;
 	*/
 
 	for (int a=0; a<na; ++a){
@@ -253,19 +253,19 @@ int gjk(vector *A, int na, vector *B, int nb, Simplex *simplex, vector *AB){
 
 
 
-vector colid2(physic  *pyA, physic *pyB, colition_hull *A, colition_hull *B,vector *prev){
+vector3D colid2(physic  *pyA, physic *pyB, colition_hull *A, colition_hull *B,vector3D *prev){
 
-	vector pA = add(&pyA->position, &pyA->velocity);
-	vector pB = add(&pyB->position, &pyB->velocity);
+	vector3D pA = add(&pyA->position, &pyA->velocity);
+	vector3D pB = add(&pyB->position, &pyB->velocity);
 
 	
-	vector out = vec(0,0,0);
-	vector *normalB = B->mesh.normals;
+	vector3D out = vec(0,0,0);
+	vector3D *normalB = B->mesh.normals;
 
-	vector col = minus( &pB, &pA);
-	vector tpa, tpb, tp;
+	vector3D col = minus( &pB, &pA);
+	vector3D tpa, tpb, tp;
 
-	// vector vert_A_max =0; 
+	// vector3D vert_A_max =0; 
 	// vert_B_min = 0;
 	float max = -100000000;
 	float min = 100000000;
@@ -293,19 +293,19 @@ vector colid2(physic  *pyA, physic *pyB, colition_hull *A, colition_hull *B,vect
 	printf("count %d\n", count);
 	//printVect(out);
 
-	//vector out = linear((A->mesh.vertics_trans + vert_A_max), (B->mesh.vertics_trans + vert_B_min), 0.5, 0.5);
-	//vector dist = minus(A->mesh.vertics_trans + vert_A_max, B->mesh.vertics_trans + vert_B_min);
+	//vector3D out = linear((A->mesh.vertics_trans + vert_A_max), (B->mesh.vertics_trans + vert_B_min), 0.5, 0.5);
+	//vector3D dist = minus(A->mesh.vertics_trans + vert_A_max, B->mesh.vertics_trans + vert_B_min);
 
 	if (dot(&pyA->velocity, &col) > 0 && count > 0){
 		printf("				BAAANNNNNNNNNG\n");
 	
-		vector r =  minus(&out, &pyA->position);
-		vector force = cross(r,  pyA->moment);
+		vector3D r =  minus(&out, &pyA->position);
+		vector3D force = cross(r,  pyA->moment);
 	
 		acc(&force, &pyA->velocity);
 			
-		vector torque = cross(force, r);
-		vector delta_velocity = r;
+		vector3D torque = cross(force, r);
+		vector3D delta_velocity = r;
 		normalize(&delta_velocity);
 		scalar(&delta_velocity, dot(&force, &delta_velocity));
 		normalize(&col);//a effacer peut etre
@@ -326,27 +326,27 @@ vector colid2(physic  *pyA, physic *pyB, colition_hull *A, colition_hull *B,vect
 
 char visited[9604];
 
-vector colid_fast(physic  *pyA, physic *pyB, colition_hull *A, colition_hull *B,vector *prev){
+vector3D colid_fast(physic  *pyA, physic *pyB, colition_hull *A, colition_hull *B,vector3D *prev){
 
 	
-	vector pA = add(&pyA->position, &pyA->velocity);
-	vector pB = add(&pyB->position, &pyB->velocity);
+	vector3D pA = add(&pyA->position, &pyA->velocity);
+	vector3D pB = add(&pyB->position, &pyB->velocity);
 	
 	//char *visited=new char[A->mesh.nb*B->mesh.nb];
 	//memset(visited, 0, A->mesh.nb*B->mesh.nb);
 
-	vector col = minus( &pB, &pA);
-	vector out = vec(0,0,0);
+	vector3D col = minus( &pB, &pA);
+	vector3D out = vec(0,0,0);
 
 	if (B->mesh.radius + A->mesh.radius < dot(&col, &col)){
 		return out;
 	}
 
-	vector delta_v = minus( &pyA->velocity, &pyB->velocity);
+	vector3D delta_v = minus( &pyA->velocity, &pyB->velocity);
 
 	float min = 10000000;	
 	int a, b, currentA=0, currentB=0;
-	vector dist;
+	vector3D dist;
 
 	int count = 0;
 	int step = 0;
@@ -355,7 +355,7 @@ vector colid_fast(physic  *pyA, physic *pyB, colition_hull *A, colition_hull *B,
 	for (int i=0; i < A->mesh.nb ; i++){
 		for (int j=0; j < B->mesh.nb ; j++){
 		
-			vector tp = minus(A->mesh.vertics_trans + i, B->mesh.vertics_trans + j);
+			vector3D tp = minus(A->mesh.vertics_trans + i, B->mesh.vertics_trans + j);
 			float maybe = dot(&tp, &tp);
 			if (maybe < 200){
 				acc(&out, A->mesh.vertics_trans + i);
@@ -424,20 +424,20 @@ vector colid_fast(physic  *pyA, physic *pyB, colition_hull *A, colition_hull *B,
 		//torque a->b
 		//out.z = 0;
 
-		vector rA =  minus(&out, &pyA->position);
-		vector angular_velA = cross(rA,  pyA->moment);
+		vector3D rA =  minus(&out, &pyA->position);
+		vector3D angular_velA = cross(rA,  pyA->moment);
 		
 		
 		//torque b->a
-		vector rB =  minus(&out, &pyB->position);
-		vector angular_velB = cross(rB, pyB->moment);
+		vector3D rB =  minus(&out, &pyB->position);
+		vector3D angular_velB = cross(rB, pyB->moment);
 		
-		vector angular_vel = minus(&angular_velA, &angular_velB);
+		vector3D angular_vel = minus(&angular_velA, &angular_velB);
 
 		acc(&angular_vel, &delta_v);
 
-		vector torqueA = cross(angular_vel, rA);
-		vector torqueB = cross(angular_vel, rB);
+		vector3D torqueA = cross(angular_vel, rA);
+		vector3D torqueB = cross(angular_vel, rB);
 
 		normalize(&rA);
 		scalar(&rA, dot(&angular_vel, &rA));
@@ -467,18 +467,18 @@ vector colid_fast(physic  *pyA, physic *pyB, colition_hull *A, colition_hull *B,
 }
 
 
-vector colid_box(physic  *pyA, physic *pyB, bounding_box A, bounding_box B){
+vector3D colid_box(physic  *pyA, physic *pyB, bounding_box A, bounding_box B){
 	//append in the local reference of A
-	vector edge[3];
-	vector corner, current_edge;
-	vector out = vec(0,0,0);
+	vector3D edge[3];
+	vector3D corner, current_edge;
+	vector3D out = vec(0,0,0);
 	int count = 0;
 
 	float max = -1;
 	
-	vector zero = mult_vm(pyB->mat.data, B.zero);
+	vector3D zero = mult_vm(pyB->mat.data, B.zero);
 	zero = inv_vm(pyA->mat.data, zero );
-	vector zero_limit;
+	vector3D zero_limit;
 	zero_limit.y = A.zero.y;
 	zero_limit.x = A.zero.x;
 	zero_limit.z = A.zero.z;
@@ -516,7 +516,7 @@ vector colid_box(physic  *pyA, physic *pyB, bounding_box A, bounding_box B){
 				float lambda = (A.limits[dim] + zero_limit.el[dim] - corner.el[dim])/(current_edge .el[dim]);
 				//printf("lambda %f, limitA %f \n",lambda, A.limits[dim] + zero_limit.el[dim]);
 				if (lambda >= 0 && lambda <= 1){
-					vector colid = add(&corner, &current_edge, lambda);
+					vector3D colid = add(&corner, &current_edge, lambda);
 					int next_dim = (dim + 1)%3;
 					if (colid.el[next_dim] > zero_limit.el[next_dim] && colid.el[next_dim] < A.limits[next_dim] + zero_limit.el[next_dim]){
 						next_dim = (dim + 2)%3;
@@ -529,7 +529,7 @@ vector colid_box(physic  *pyA, physic *pyB, bounding_box A, bounding_box B){
 
 				lambda = (zero_limit.el[dim] - corner.el[dim])/(current_edge.el[dim]);
 				if (lambda >= 0 && lambda <= 1){
-					vector colid = add(&corner, &current_edge, lambda);
+					vector3D colid = add(&corner, &current_edge, lambda);
 					int next_dim = (dim + 1)%3;
 					if (colid.el[next_dim] > zero_limit.el[next_dim] && colid.el[next_dim] < A.limits[next_dim] + zero_limit.el[next_dim]){
 						next_dim = (dim + 2)%3;

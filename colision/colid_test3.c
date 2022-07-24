@@ -19,7 +19,7 @@ Window win;
 GC gc;
 
 void draw(mesh3D *obj){
-	vector *v = obj->vertics_trans;
+	vector3D *v = obj->vertics_trans;
 	int *f = obj->face;
 	int nb_f = obj->nb_f;
 	double d = 500;
@@ -33,8 +33,8 @@ void draw(mesh3D *obj){
 }
 
 void drawNormal(mesh3D *obj, int shift){
-	vector *v = obj->vertics_trans;
-	vector *normals = obj->normals;
+	vector3D *v = obj->vertics_trans;
+	vector3D *normals = obj->normals;
 	int nb = obj->nb;
 	XSetForeground(dis,gc, 0x4444FF);
 	for (int i=0; i<nb; i++){
@@ -43,7 +43,7 @@ void drawNormal(mesh3D *obj, int shift){
 	}
 }
 
-void draw(vector *v, int nb, int shift){
+void draw(vector3D *v, int nb, int shift){
 
 	for (int i=0; i<nb; ++i){
 		XFillRectangle(dis, win, gc, v[i].x + shift, v[i].y + shift, 5, 5);
@@ -125,7 +125,7 @@ int main () {
 	make_ide4(eye.data);
 	float phi = 0;
 	float rho = PI/2;
-	vector c = vec(0,0,0);
+	vector3D c = vec(0,0,0);
 
 	XImage *image = XCreateImage(dis, DefaultVisual(dis, DefaultScreen(dis)), DefaultDepth(dis, DefaultScreen(dis)), ZPixmap, 0, (char*)buffer.data, buffer.w, buffer.h, 8, 0);
 	int frame=0;
@@ -150,7 +150,7 @@ int main () {
 		
 		for (int i=0; i<NB; i++){
 			for (int j=i+1; j<NB; j++){
-				vector c = colid_fast(&phy[i], &phy[j], &hull[i], &hull[j], &c);
+				vector3D c = colid_fast(&phy[i], &phy[j], &hull[i], &hull[j], &c);
 				
 			}
 		}		

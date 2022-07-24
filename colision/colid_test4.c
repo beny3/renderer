@@ -19,7 +19,7 @@ GC gc;
 
 
 void draw(mesh3D *obj, int shift){
-	vector *v = obj->vertics_trans;
+	vector3D *v = obj->vertics_trans;
 	int *f = obj->face;
 	int nb_f = obj->nb_f;
 
@@ -32,8 +32,8 @@ void draw(mesh3D *obj, int shift){
 
 
 void drawNormal(mesh3D *obj, int shift){
-	vector *v = obj->vertics_trans;
-	vector *normals = obj->normals;
+	vector3D *v = obj->vertics_trans;
+	vector3D *normals = obj->normals;
 	int nb = obj->nb;
 	XSetForeground(dis,gc, 0x4444FF);
 	for (int i=0; i<nb; i++){
@@ -43,7 +43,7 @@ void drawNormal(mesh3D *obj, int shift){
 }
 
 
-void draw(vector *v, int nb, int shift){
+void draw(vector3D *v, int nb, int shift){
 
 	for (int i=0; i<nb; ++i){
 		XFillRectangle(dis, win, gc, v[i].x + shift, v[i].y + shift, 5, 5);
@@ -123,7 +123,7 @@ int main () {
 	euler(&phyB, 1);
 	euler(&phyA, 1);
 
-	vector test = vec(666,66,6);
+	vector3D test = vec(666,66,6);
 	test = mult_vm(phyB.mat.data,  test);
 	test = inv_vm(phyB.mat.data,  test );
 	printVect(test);
@@ -131,7 +131,7 @@ int main () {
 	matrix m2 = make_rot4(0.,0.,PI/2);
 	matrix m22 = make_rot4(0.,PI/2,0.);
 
-	vector c = vec(0,0,0);
+	vector3D c = vec(0,0,0);
 	
 	while(1) {		
 	
@@ -140,10 +140,10 @@ int main () {
 			
 			//print_mat(m2.data);
 			
-			vector pos = vec(event.xbutton.x-200, event.xbutton.y-200, 0);
+			vector3D pos = vec(event.xbutton.x-200, event.xbutton.y-200, 0);
 
-			vector pos2 = vec(400,   0, 0);
-			vector pos3 = vec(  0, 400, 0);
+			vector3D pos2 = vec(400,   0, 0);
+			vector3D pos3 = vec(  0, 400, 0);
 			make_mov4(m2.data, pos2);
 			make_mov4(m22.data, pos3);
 
@@ -159,7 +159,7 @@ int main () {
 			drawNormal(&rectA, 200);
 
 			clock_t start = clock();
-			vector c = vec(0, 0, 0);
+			vector3D c = vec(0, 0, 0);
 			c = colid_box(&phyA, &phyB, bA, bB);
 			clock_t end = clock();
 
@@ -177,7 +177,7 @@ int main () {
 			mult_vm(m4.data, rectB.vertics, rectB.vertics_trans, rectB.nb);
 			mult_vm(m22.data, rectA.vertics, rectA.vertics_trans, rectA.nb);
 
-			vector c1 = mult_vm(m22.data, c);
+			vector3D c1 = mult_vm(m22.data, c);
 			draw(&rectB, 200);
 			draw(&rectA, 200);
 			XFillRectangle(dis, win, gc, c1.x +200, c1.y+200, 10, 10);

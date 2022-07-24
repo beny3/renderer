@@ -29,7 +29,7 @@ void draw(int *bitmap){
 	}
 }
 
-void draw(vector *v, int *f, int nb_f){
+void draw(vector3D *v, int *f, int nb_f){
 
 	for (int i=0; i<nb_f; i+=3){
 		XDrawLine(dis, win, gc, v[f[i]].x , v[f[i]].y, v[f[i+1]].x, v[f[i+1]].y);

@@ -2,10 +2,6 @@
 #include "triangle.h"
 #include <vector>
 
-#define ISX(i) ((i)&1)
-#define ISY(i) (((i)&2)/2)
-#define ISZ(i) (((i)&4)/4)
-
 const int maxVoxel = 1 << 10;
 const int maxIdx = 1 << 20;
 
@@ -16,56 +12,47 @@ struct Node{
 };
 
 struct Octree {
-    int maxLevel = 10;
+    int maxLevel = 6;
 	std::vector<Node> nodes;
 };
 
 void octree_rec(triangle *tri, Octree *octree, int faceId, int nodeId, int level){
   
 	vector3D tp = octree->nodes[nodeId].corner;
+	//octree->nodes.reserve(10000000);
 	vector3D projvec;
-	float jump = octree->nodes[nodeId].size/2;  
-	tp.x += jump/2;
-	tp.y += jump/2;
-	tp.z += jump/2;
+	float jump = octree->nodes[nodeId].size/2.;  
+	//tp.x += jump/2.;
+	//tp.y += jump/2.;
+	//tp.z += jump/2.;
 	
 	float boundingSphere = jump*jump*3;
 
 	for(int i = 0; i < 8; ++i){
 
 		vector3D point = tp;
+
+		//Loop over bottom corner of boxes
 		point.x += ISX(i)*jump;
 		point.y += ISY(i)*jump;
 		point.z += ISZ(i)*jump;
-		
-		projvec = proj(tri, &point);
 
-		vector3D projvecPlusA = add(&projvec, &(tri->a));
-		
-		//if(dist3Dsquare(&projvecPlusA, &point) > boundingSphere)continue;
-	
-		vector3D inter = triangle_in_box(tri, &projvec, &point);
-
-		//TODO jumb should be power of two?
-		if( (int)(inter.x/jump) == (int)(point.x/jump) && 
-			(int)(inter.y/jump) == (int)(point.y/jump) &&
-			(int)(inter.z/jump) == (int)(point.z/jump)){
-
-			if (level == octree->maxLevel){
+		if (triangle_in_box2(*tri, point, jump, level)) {
+			if (level == octree->maxLevel) {
 				octree->nodes[nodeId].childs[i] = -faceId;
 			} else {
-
 				if (octree->nodes[nodeId].childs[i] == 0) {
 
-					Node n;
-					n.corner = octree->nodes[nodeId].corner;
-					n.corner.x += ISX(i)*jump;
-					n.corner.y += ISY(i)*jump;
-					n.corner.z += ISZ(i)*jump;
-					n.size = jump;
-					octree->nodes.push_back(n);
+					octree->nodes.emplace_back();
 					int idx = octree->nodes.size();
 					octree->nodes[nodeId].childs[i] = idx;
+
+					octree->nodes[idx-1].corner = octree->nodes[nodeId].corner;
+					octree->nodes[idx-1].corner.x += ISX(i)*jump;
+					octree->nodes[idx-1].corner.y += ISY(i)*jump;
+					octree->nodes[idx-1].corner.z += ISZ(i)*jump;
+					octree->nodes[idx-1].size = jump;
+
 					//TODO the index minus one appread two time maybe it should be in a function
 					octree_rec(tri, octree, faceId, idx - 1, level + 1);	
 				} else {
@@ -79,26 +66,42 @@ void octree_rec(triangle *tri, Octree *octree, int faceId, int nodeId, int level
 
 Octree make_octree(mesh3D *obj){
     
+	const float eps = 1;
+
 	Octree octree;
 	octree.nodes.reserve(10*maxVoxel);
 	Node first;
-	first.corner.x = -200;
-	first.corner.y = -200;
-	first.corner.z = -200;
-	first.size = 400;
-	octree.nodes.push_back(first);	
-	triangle tri = make_triangle(obj, 0);
-	octree_rec(&tri, &octree, 1, 0, 0);
-	return octree;
+	first.corner = obj->bboxa.zero;
+	first.corner.x -= eps;
+	first.corner.y -= eps;
+	first.corner.z -= eps;
+	printVect(first.corner);
+    //first.corner.x = -200;
+	//first.corner.y = -200;
+	//first.corner.z = -213.25;
+	//first.size = 450;
+	first.size = obj->bboxa.edge.x + 2*eps;
+	if(obj->bboxa.edge.y > first.size)first.size = obj->bboxa.edge.y + 2*eps;
+	if(obj->bboxa.edge.z > first.size)first.size = obj->bboxa.edge.z + 2*eps;
+	printf("size %f \n", first.size);
+	octree.nodes.push_back(first);
+	for(int i = 0; i < obj->nb_f/3; ++i) {
+		triangle tri = make_triangle(obj, i);
+		octree_rec(&tri, &octree, i+1, 0, 0);		
+	}
+	return octree;	
 }	
 
-void dfsRec(std::vector<vector3D> &res, Octree *octree, Node *node){
+void dfsRec(std::vector<vector3D> &res, Octree *octree, int nodeId){
+
+	Node *node =  &octree->nodes[nodeId];
 
 	for(int i = 0; i < 8; ++i){
 			
 		if (node->childs[i] > 0) {
-			 dfsRec(res, octree, &octree->nodes[node->childs[i] - 1]);
+			 dfsRec(res, octree, node->childs[i] - 1);
 		} else if (node->childs[i] < 0)  {
+			//printf("%d \n", nodeId);
 			vector3D point = node->corner;
 			point.x += node->size/2;
 			point.y += node->size/2;
@@ -111,7 +114,7 @@ void dfsRec(std::vector<vector3D> &res, Octree *octree, Node *node){
 std::vector<vector3D> dfsOctree(Octree *octree){
 	std::vector<vector3D> res;
 	if(octree->nodes.size() > 0){
-		dfsRec(res, octree, &octree->nodes[0]);
+		dfsRec(res, octree, 0);
 	}
 	return res;
 }

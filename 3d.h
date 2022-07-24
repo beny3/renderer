@@ -247,8 +247,8 @@ void draw_mesh4(mesh3D &obj, bitmap buffer, float mat[16], char *which_shape){
 			int idx = obj.face[i+k];
 			//printf("idx %d \n", idx);
 			z[k] = obj.vertics_trans[idx].z + 500;
-			face[k].x = (obj.vertics_trans[idx].x*500)/(500 + z[k]) + buffer.w/2;
-			face[k].y = (obj.vertics_trans[idx].y*500)/(500 + z[k]) + buffer.h/2;
+			face[k].x = (obj.vertics_trans[idx].x*500)/(500 + z[k])*2 + buffer.w/2;
+			face[k].y = (obj.vertics_trans[idx].y*500)/(500 + z[k])*2 + buffer.h/2;
 
 			normal[k].x = (obj.normals[idx].x*mat[0] +obj.normals[idx].y*mat[1] + obj.normals[idx].z*mat[2]);
 			normal[k].y = (obj.normals[idx].x*mat[4] +obj.normals[idx].y*mat[5] + obj.normals[idx].z*mat[6]);

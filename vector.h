@@ -3,9 +3,12 @@
 #include<stdlib.h>
 #include<stdio.h>
 #include<math.h>
-#define PI (3.14159265)
+#include <limits> 
 
-typedef struct vector{
+#define PI (3.14159265)
+#define MINI 3
+
+typedef struct vector3D{
 	union{
 		struct{
 			float x;
@@ -27,6 +30,25 @@ typedef struct vector4D{
 	float z;
 	float phi;
 } vector4D;
+
+struct bounding_box{
+	union {
+		struct {
+			vector3D edge;
+			vector3D zero;
+		}
+		;
+		float limits[6]={
+		std::numeric_limits<float>::min(),
+		std::numeric_limits<float>::min(),
+		std::numeric_limits<float>::min(),
+		std::numeric_limits<float>::max(),
+		std::numeric_limits<float>::max(),
+		std::numeric_limits<float>::max(),};
+		;
+		vector3D limitsV[2];
+	};
+};
 
 typedef struct weight{
 	int bone;
@@ -53,7 +75,7 @@ float dot(vector4D *a, vector4D *b){
 	return a->x*b->x + a->y*b->y + a->z*b->z + a->phi*b->phi;
 }
 
-float dot(vector3D *a, vector3D *b){
+float dot(const vector3D *a, const vector3D *b){
 	return a->x*b->x + a->y*b->y + a->z*b->z;
 }
 
@@ -284,6 +306,12 @@ float inline dist3Dsquare(vector3D *a, vector3D *b){
 	return (a->x - b->x)*(a->x - b->x) + (a->y - b->y)*(a->y - b->y)  + (a->z - b->z)*(a->z - b->z);
 }
 
+float inline dist3DsquareRel(vector3D *a, vector3D *b, vector3D *c){
+	return (a->x - b->x + c->x)*(a->x - b->x + c->x)  + 
+	       (a->y - b->y + c->y)*(a->y - b->y + c->y)  + 
+		   (a->z - b->z + c->z)*(a->z - b->z + c->z);
+}
+
 
 vector3D cross(vector3D &a, vector3D &b){
 	vector3D out;
@@ -502,6 +530,18 @@ void mult_vm(float mat[16], vector3D *in, vector3D *out, int n){
 		float *y=(float*)&out[k];
 		for (int i=0; i<12; i+=4){
 			y[i/4] = mat[0 + i]*in[k].x + mat[1 + i]*in[k].y + mat[2 + i]*in[k].z + mat[3 + i];
+		}
+	}
+}
+
+void mult_vm(float mat[16], vector3D *in, vector3D *out, float limits[6], int n){
+	for (int k=0; k<n; k++){
+		float *y=(float*)&out[k];
+		for (int i=0; i<12; i+=4){
+			int dim = i/4;
+			y[dim] = mat[0 + i]*in[k].x + mat[1 + i]*in[k].y + mat[2 + i]*in[k].z + mat[3 + i];
+			if(y[dim] > limits[dim]) limits[dim] = y[dim];
+			if(y[dim] < limits[dim + MINI]) limits[dim + MINI] = y[dim];
 		}
 	}
 }

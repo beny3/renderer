@@ -17,7 +17,7 @@ Window win;
 GC gc;
 
 
-void draw(vector *v, int *f, int nb_f, int shift){
+void draw(vector3D *v, int *f, int nb_f, int shift){
 
 	for (int i=0; i<nb_f; i+=3){
 
@@ -28,7 +28,7 @@ void draw(vector *v, int *f, int nb_f, int shift){
 }
 
 
-void draw(vector *v, int nb, int shift){
+void draw(vector3D *v, int nb, int shift){
 
 	for (int i=0; i<nb; ++i){
 		XFillRectangle(dis, win, gc, v[i].x + shift, v[i].y + shift, 5, 5);
@@ -84,17 +84,17 @@ int main () {
 	colition_hull hullB = make_graph(rectB);
 	print_hull(&hullB);
 
-	vector D = vec(0,1,0);
+	vector3D D = vec(0,1,0);
 
-	vector AB[64];
-	vector AB_t[64];
-	vector normals[3]; 
+	vector3D AB[64];
+	vector3D AB_t[64];
+	vector3D normals[3]; 
 
 	Simplex simplex;
 
 	mesh3D tetra;
 	tetra.vertics = simplex.data;
-	tetra.vertics_trans = new vector[4];
+	tetra.vertics_trans = new vector3D[4];
 	tetra.nb = 4;
 	tetra.nb_f = 12;
 	tetra.face = new int[12];
@@ -142,10 +142,10 @@ int main () {
 			
 			//print_mat(m2.data);
 
-			vector pos = vec(event.xbutton.x-200, event.xbutton.y-200, 0);
+			vector3D pos = vec(event.xbutton.x-200, event.xbutton.y-200, 0);
 			make_mov4(m.data, pos);
-			vector pos2 = vec(400,   0, 0);
-			vector pos3 = vec(  0, 400, 0);
+			vector3D pos2 = vec(400,   0, 0);
+			vector3D pos3 = vec(  0, 400, 0);
 			make_mov4(m2.data, pos2);
 			make_mov4(m22.data, pos3);
 
@@ -200,7 +200,7 @@ int main () {
 				XFillRectangle(dis, win, gc, tetra.vertics_trans[3].x +200,  tetra.vertics_trans[3].y+200, 10, 10);
 				XFillRectangle(dis, win, gc, tetra.vertics[3].x +200,  tetra.vertics[3].y+200, 10, 10);
 			
-				vector centre = add(&tetra.vertics[0], &tetra.vertics[1]);
+				vector3D centre = add(&tetra.vertics[0], &tetra.vertics[1]);
 				acc(&centre, &tetra.vertics[3]);
 				scalar(&centre, 0.33);
 			

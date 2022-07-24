@@ -7,22 +7,27 @@
 #include "bitmap.h"
 
 typedef struct mesh3D{
-    const char *name;
-	vector3D *vertics;
-	vector3D *vertics_trans;  
-	weight *w;
-	float *wf;
-	vector3D *normals;
-	vector3D *normals_f;	
-	vector2D *v_text;
-	vector3D center;
-	float radius;
-	int nb;
-	int nb_t;
-	int nb_f;
-	int *face;
-	char *which_shape;
-	bitmap texture;
+    const char* name;
+	vector3D*   vertics;
+	vector3D*   vertics_trans;  
+	weight*     w;
+	float *     wf;
+	vector3D*   normals;
+	vector3D*   normals_f;	
+	vector2D*   v_text;
+	vector3D    center;
+
+    vector3D     bbox[8];
+	vector3D     bbox_t[8];
+	bounding_box bboxa;
+	//where do I use radius?
+	float       radius;
+	int         nb;
+	int         nb_t;
+	int         nb_f;
+	int*        face;
+	char*       which_shape;
+	bitmap      texture;
 } mesh3D;
 
 void allocate_mesh3D(mesh3D *obj, int nb, int nb_f, int nb_t){
@@ -48,11 +53,6 @@ struct colition_hull{
 	int current_vert;
 };
 
-struct bounding_box{
-	vector3D zero;
-	float limits[3]={0,0,0};
-};
-
 struct physic{
 	vector3D position;
 	vector3D velocity;
@@ -63,24 +63,58 @@ struct physic{
 	matrix mat;
 };
 
-bounding_box make_bounding_box(mesh3D *obj){
+bounding_box make_bounding_boxA(vector3D *vertics, int nb){
 	bounding_box out;
-	float min[3]={1000000,1000000,1000000};
-	float max[3]={-1000000,-1000000,-1000000};
 
-	for (int i=0; i < obj->nb; i++){
+	for (int i=0; i < nb; i++){
 		for (int j=0; j<3; j++){
-			if(obj->vertics[i].el[j] < min[j]){min[j]=obj->vertics[i].el[j];}
-			if(obj->vertics[i].el[j] > max[j]){max[j]=obj->vertics[i].el[j];}
+			if(vertics[i].el[j] < out.limits[MINI + j]) {
+				out.limits[MINI + j] = vertics[i].el[j];
+			}
+			if(vertics[i].el[j] > out.limits[j]) {
+				out.limits[j]= vertics[i].el[j];
+			}
 		}
 	}
-	out.limits[0]=max[1]-min[1];
-	out.limits[1]=max[0]-min[0];
-	out.limits[2]=max[2]-min[2];
-	out.zero = vec(min[0], min[1], min[2]);
+
+	out.limits[0] -= out.limits[MINI    ];
+	out.limits[1] -= out.limits[MINI + 1];
+	out.limits[2] -= out.limits[MINI + 2];
 
 	return out;
 }
+
+void  make_bounding_box(mesh3D *obj) {
+
+	float limits[6] = {
+		std::numeric_limits<float>::max(),
+		std::numeric_limits<float>::max(),
+		std::numeric_limits<float>::max(),
+		std::numeric_limits<float>::min(),
+		std::numeric_limits<float>::min(),
+		std::numeric_limits<float>::min()
+	};
+
+	for (int i = 0; i < obj->nb; i++){
+		for (int j = 0; j < 3; j++){
+			if(obj->vertics[i].el[j] < limits[j]) {
+				limits[j    ] = obj->vertics[i].el[j];
+			}
+			if(obj->vertics[i].el[j] > limits[j + 3]) {
+				limits[j + 3] = obj->vertics[i].el[j];
+			}
+		}
+	}
+	obj->bbox[0] = vec(limits[0], limits[1], limits[2]);
+	obj->bbox[1] = vec(limits[3], limits[1], limits[2]);
+	obj->bbox[2] = vec(limits[3], limits[4], limits[2]);
+	obj->bbox[3] = vec(limits[0], limits[4], limits[2]);
+	obj->bbox[4] = vec(limits[0], limits[1], limits[5]);
+	obj->bbox[5] = vec(limits[3], limits[1], limits[5]);
+	obj->bbox[6] = vec(limits[3], limits[4], limits[5]);
+	obj->bbox[7] = vec(limits[0], limits[4], limits[5]);
+}
+
 
 void make_normal(mesh3D *obj){
 
@@ -106,15 +140,22 @@ void make_normal(mesh3D *obj){
 	}
 }
 
-vector diamond_vertics[] = {{0,1,0}, {-1,0,1}, {1,0,1}, {1,0,-1}, {-1,0,-1}, {0, -1, 0}};
-vector diamond_vertics_t[] = {{0,1,0}, {-1,0,1}, {1,0,1}, {1,0,-1}, {-1,0,-1}, {0, -1, 0}};
-vector diamond_normals[] = {{0,1,0}, {-1,0,1}, {1,0,1}, {1,0,-1}, {-1,0,-1}, {0, -1, 0}};
-int    diamond_face[] = {1,2,0, 2,3,0, 3,4,0, 4,1,0, 1,2,5, 2,3,5, 3,4,5, 4,1,5};
+void transform(mesh3D *obj, float mat[16]) {
+	mult_vm(mat, obj->vertics, obj->vertics_trans, obj->nb);
+	mult_vm(mat, obj->bbox, obj->bbox_t, 8);
 
-vector triangle_vertics[] = {{-1,0,0}, {1,0,0}, {0,1,0}};
-vector triangle_vertics_t[] = {{-1,0,0}, {0,1,0}, {1,0,0}};
-vector triangle_normals[] = {{0,0,1}, {0,0,1}, {0,0,1}};
-int    triangle_face[] = {0,1,2};
+	obj->bboxa = make_bounding_boxA(obj->bbox_t, 8);
+}
+
+vector3D diamond_vertics[] = {{0,1,0}, {-1,0,1}, {1,0,1}, {1,0,-1}, {-1,0,-1}, {0, -1, 0}};
+vector3D diamond_vertics_t[] = {{0,1,0}, {-1,0,1}, {1,0,1}, {1,0,-1}, {-1,0,-1}, {0, -1, 0}};
+vector3D diamond_normals[] = {{0,1,0}, {-1,0,1}, {1,0,1}, {1,0,-1}, {-1,0,-1}, {0, -1, 0}};
+int      diamond_face[] = {1,2,0, 2,3,0, 3,4,0, 4,1,0, 1,2,5, 2,3,5, 3,4,5, 4,1,5};
+
+vector3D triangle_vertics[] = {{-1,0,0}, {1,0,0}, {0,1,0}};
+vector3D triangle_vertics_t[] = {{-1,0,0}, {0,1,0}, {1,0,0}};
+vector3D triangle_normals[] = {{0,0,1}, {0,0,1}, {0,0,1}};
+int      triangle_face[] = {0,1,2};
 
 mesh3D make_diamond(const char *name){
 
@@ -122,15 +163,16 @@ mesh3D make_diamond(const char *name){
 	diamond.name = name;
 	allocate_mesh3D(&diamond, 6, 24, 6);
 
-	memcpy(diamond.vertics,       diamond_vertics , diamond.nb*sizeof(vector));
-	memcpy(diamond.vertics_trans, diamond_vertics , diamond.nb*sizeof(vector));
-	memcpy(diamond.normals,       diamond_normals , diamond.nb*sizeof(vector));
+	memcpy(diamond.vertics,       diamond_vertics , diamond.nb*sizeof(vector3D));
+	memcpy(diamond.vertics_trans, diamond_vertics , diamond.nb*sizeof(vector3D));
+	memcpy(diamond.normals,       diamond_normals , diamond.nb*sizeof(vector3D));
 	memcpy(diamond.face,          diamond_face    , diamond.nb_f*sizeof(int));
 
 	make_normal(&diamond);
 	for (int i = 0; i<diamond.nb; i++){
 		normalize(diamond.vertics + i);
 	}
+	make_bounding_box(&diamond);
 	return diamond;
 }
 
@@ -140,13 +182,13 @@ mesh3D make_triangle_obj(const char *name){
 	triangle.name = name;
 	allocate_mesh3D(&triangle, 3, 3, 3);
 
-	memcpy(triangle.vertics      , triangle_vertics , triangle.nb*sizeof(vector));
-	memcpy(triangle.vertics_trans, triangle_vertics , triangle.nb*sizeof(vector));
-	memcpy(triangle.normals      , triangle_normals , triangle.nb*sizeof(vector));
+	memcpy(triangle.vertics      , triangle_vertics , triangle.nb*sizeof(vector3D));
+	memcpy(triangle.vertics_trans, triangle_vertics , triangle.nb*sizeof(vector3D));
+	memcpy(triangle.normals      , triangle_normals , triangle.nb*sizeof(vector3D));
 	memcpy(triangle.face         , triangle_face    , triangle.nb_f*sizeof(int));
 
 	make_normal(&triangle);
-
+	make_bounding_box(&triangle);
 	return triangle;
 }
 
@@ -235,6 +277,7 @@ int read_mesh3D(mesh3D *obj, const char* name){
 	fclose(file);
 	//calcul normal
 	make_normal(obj);
+    make_bounding_box(obj);
 	return 0;
 }
 
