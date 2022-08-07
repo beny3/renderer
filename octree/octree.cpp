@@ -18,7 +18,7 @@ void draw_from_list(std::vector<vector3D>& list,
     float mat[16];
 	for (auto& v: list){
 		rotate4(0, 0, 0, mat);
-		//scale(mat, 10);
+		scale(mat, 5);
 		make_mov4(mat, v);
 		mult_vm(mat, dot.vertics , dot.vertics_trans,  dot.nb);
 		draw_mesh4(dot, buffer, mat, dot.which_shape);
@@ -30,7 +30,8 @@ int main () {
 	int total = 100;
 
 	int iter = 0;
-	mesh3D obj  = make_diamond("tri");
+	mesh3D obj  = make_diamond("obj");
+	//mesh3D obj  = make_triangle_obj("tri");
 	mesh3D dot  = make_diamond("dot");
 	mesh3D dot2 = make_diamond("dot2");
 	//read_mesh3D(&obj, "test.obj");
@@ -84,8 +85,9 @@ int main () {
 		nb_call = 0;
 		Octree octree = make_octree(&obj);
 		clock_t t2 = clock();
-		printf(" temps octree %f nbcall %d size %u %u \n",(double)(t2 - t1)/CLOCKS_PER_SEC, 
-		                                                  nb_call,
+		double temps = (double)(t2 - t1)/CLOCKS_PER_SEC;
+		printf(" temps octree %f nbcall %f size %u %u \n", temps, 
+		                                                  nb_call/temps,
 														  octree.nodes.size(), 
 														  sizeof(Node));
 		std::vector<vector3D> out = dfsOctree(&octree);	

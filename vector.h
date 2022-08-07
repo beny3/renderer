@@ -87,18 +87,19 @@ float quad_sol2(float a,float b,float c){
 	return (-b - sqrt(b*b -4*a*c))/(2*a);
 }
 
-float acc(vector3D *a, vector3D *b){
+void acc(vector3D *a, vector3D *b){
 	a->x+=b->x;
 	a->y+=b->y;
 	a->z+=b->z;
 }
 
-float acc(vector3D *a, vector3D *b, float alpha){
+void acc(vector3D *a, vector3D *b, float alpha){
 	a->x+=alpha*b->x;
 	a->y+=alpha*b->y;
 	a->z+=alpha*b->z;
 }
-float acc_one_to_many(vector3D *a, vector3D *one, float alpha, int n){
+
+void acc_one_to_many(vector3D *a, vector3D *one, float alpha, int n){
 	for (int i=0; i<n; i++){
 		a[i].x+= alpha*one->x;
 		a[i].y+= alpha*one->y;
@@ -106,7 +107,7 @@ float acc_one_to_many(vector3D *a, vector3D *one, float alpha, int n){
 	}
 }
 
-float acc(vector3D *a, vector3D *b, float alpha, int n){
+void acc(vector3D *a, vector3D *b, float alpha, int n){
 	for (int i=0; i<n; i++){
 		a[i].x+= alpha*b[i].x;
 		a[i].y+= alpha*b[i].y;
@@ -114,13 +115,13 @@ float acc(vector3D *a, vector3D *b, float alpha, int n){
 	}
 }
 
-float sub(vector3D *a, vector3D *b){
+void sub(vector3D *a, vector3D *b){
 	a->x-=b->x;
 	a->y-=b->y;
 	a->z-=b->z;
 }
 
-float proj(vector3D *point, vector3D *n){
+void proj(vector3D *point, vector3D *n){
 	//point = point - ((point)'*n)*n;
 	float f = dot(point, n);
 	point->x -= f*n->x;
@@ -128,7 +129,7 @@ float proj(vector3D *point, vector3D *n){
 	point->z -= f*n->z;
 }
 
-float sub_overWrite_left(vector3D *a, vector3D *b){
+void sub_overWrite_left(vector3D *a, vector3D *b){
 	b->x = a->x - b->x;
 	b->y = a->y - b->y;
 	b->z = a->z - b->z;

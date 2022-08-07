@@ -7,27 +7,27 @@
 #include "bitmap.h"
 
 typedef struct mesh3D{
-    const char* name;
-	vector3D*   vertics;
-	vector3D*   vertics_trans;  
-	weight*     w;
-	float *     wf;
-	vector3D*   normals;
-	vector3D*   normals_f;	
-	vector2D*   v_text;
-	vector3D    center;
+    const char*  name;
+	vector3D*    vertics;
+	vector3D*    vertics_trans;  
+	weight*      w;
+	float *      wf;
+	vector3D*    normals;
+	vector3D*    normals_f;	
+	vector2D*    v_text;
+	vector3D     center;
 
     vector3D     bbox[8];
 	vector3D     bbox_t[8];
 	bounding_box bboxa;
 	//where do I use radius?
-	float       radius;
-	int         nb;
-	int         nb_t;
-	int         nb_f;
-	int*        face;
-	char*       which_shape;
-	bitmap      texture;
+	float        radius;
+	int          nb;
+	int          nb_t;
+	int          nb_f;
+	int*         face;
+	char*        which_shape;
+	bitmap       texture;
 } mesh3D;
 
 void allocate_mesh3D(mesh3D *obj, int nb, int nb_f, int nb_t){

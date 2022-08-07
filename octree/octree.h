@@ -12,7 +12,7 @@ struct Node{
 };
 
 struct Octree {
-    int maxLevel = 6;
+    int maxLevel = 8;
 	std::vector<Node> nodes;
 };
 
@@ -64,6 +64,19 @@ void octree_rec(triangle *tri, Octree *octree, int faceId, int nodeId, int level
 	}
 }
 
+int testSpeed(triangle *tri) {
+	int total = 0;
+	for(int z = 0 ; z < 200; z++) {
+		for(int y = 0 ; y < 200; y++) {
+			for(int x = 0 ; x < 200; x++) {
+				vector3D corner = vec(x,y,z); 
+				total += triangle_in_box2(*tri, corner, 2, 0);
+			}
+		}
+	}
+	return total;
+}
+
 Octree make_octree(mesh3D *obj){
     
 	const float eps = 1;
@@ -86,7 +99,8 @@ Octree make_octree(mesh3D *obj){
 	printf("size %f \n", first.size);
 	octree.nodes.push_back(first);
 	for(int i = 0; i < obj->nb_f/3; ++i) {
-		triangle tri = make_triangle(obj, i);
+		triangle tri = make_triangle(obj, i);;
+		//octree.maxLevel = testSpeed(&tri);
 		octree_rec(&tri, &octree, i+1, 0, 0);		
 	}
 	return octree;	
@@ -118,5 +132,4 @@ std::vector<vector3D> dfsOctree(Octree *octree){
 	}
 	return res;
 }
-
 

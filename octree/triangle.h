@@ -2,6 +2,22 @@
 #include "../3d.h"
 #include "../obj3d.h"
 
+#define COMPUTE_S_T(i)\
+    tp.x = node.x + q*C_dirs[3*i    ] - a.x;\
+    tp.y = node.y + q*C_dirs[3*i + 1] - a.y;\
+    tp.z = node.z + q*C_dirs[3*i + 2] - a.z;\
+    if(dim == 0){\
+        s = (tp.x*m0 + tp.y*m1)/det;\
+        t = (tp.x*m2 + tp.y*m3)/det;\
+    }else if (dim == 1){\
+        s = (tp.y*m0 + tp.z*m1)/det;\
+        t = (tp.y*m2 + tp.z*m3)/det;\
+    } else {\
+        s = (tp.x*m0 + tp.z*m1)/det;\
+        t = (tp.x*m2 + tp.z*m3)/det;\
+    }\
+
+
 inline  int ISX(const int i) {return i&1;}
 inline  int ISY(const int i) {return ((i)&2)/2;}
 inline  int ISZ(const int i) {return ((i)&4)/4;}
@@ -13,15 +29,17 @@ struct triangle {
 	vector3D u3D;
 	vector3D ut3D;
 	vector3D n3D;
+	//min dist does 
 	vector2D u;
 	vector2D v;
 	vector2D w;
 	vector2D un;
 	vector2D vn;
 	vector2D wn;
-	vector2D du;
-	vector2D dv;
-	vector2D dw;
+	//2d mat
+	float mat[4];
+	float det = 0;
+	char dim = 0;
 };
 
 inline bool inBox(const vector3D &inter,
@@ -34,6 +52,16 @@ inline bool inBox(const vector3D &inter,
 		   inter.y < point.y + fact*jump && inter.y >= point.y-jump*0.1 &&
 		   inter.z < point.z + fact*jump && inter.z >= point.z-jump*0.1;
 
+}
+
+inline bool in2DTri(const float x,
+					const float y,
+					const float det,
+					const float m[4]) {
+
+	float s = (x*m[0] + y*m[1])/det;
+	float t = (x*m[2] + y*m[3])/det;
+	return (s >= 0. && t >= 0. && t + s <= 1.);
 }
 
 inline vector2D to2D(const vector3D* point,
@@ -134,55 +162,58 @@ triangle make_triangle(mesh3D *obj, int f){
 		tri.vn.x = -tri.vn.x;
 		tri.vn.y = -tri.vn.y;
 	}
-	//project on cardinal directions. to find the shortest path in term of L1 instead of L2
-	u3D = to3DO(&tri, &tri.un); 
-	u3D.x = flatner(u3D.x);
-	u3D.y = flatner(u3D.y);
-	u3D.z = flatner(u3D.z);
-	proj(&u3D, &tri.n3D);
-	tri.du = to2D(&u3D, &tri);
 
-	v3D = to3DO(&tri, &tri.vn); 
-	v3D.x = flatner(v3D.x);
-	v3D.y = flatner(v3D.y);
-	v3D.z = flatner(v3D.z);
-	proj(&v3D, &tri.n3D);
-	tri.dv = to2D(&v3D, &tri);
+	tri.mat[0] = v3D.y;
+	tri.mat[1] = -v3D.x;
+	tri.mat[2] = -u3D.y;
+	tri.mat[3] = u3D.x;
+	tri.det  = u3D.x*v3D.y - u3D.y*v3D.x;
+	float det2 = u3D.y*v3D.z - u3D.z*v3D.y;
+	float det3 = u3D.z*v3D.x - u3D.x*v3D.z;
 
-	w3D = to3DO(&tri, &tri.wn); 
-	w3D.x = flatner(w3D.x);
-	w3D.y = flatner(w3D.y);
-	w3D.z = flatner(w3D.z);
-	proj(&w3D, &tri.n3D);
-	tri.dw = to2D(&w3D, &tri);
+	if (fabs(det2) > fabs(tri.det)){
+		tri.dim = 1;
+		tri.det = det2;
+		tri.mat[0] = v3D.z;
+		tri.mat[1] = -v3D.y;
+		tri.mat[2] = -u3D.z;
+		tri.mat[3] = u3D.y;
+	}
+
+	if (fabs(det3) > fabs(tri.det)){
+		tri.dim = 2;
+		tri.det = det3;
+		tri.mat[0] = v3D.x;
+		tri.mat[1] = -v3D.z;
+		tri.mat[2] = -u3D.x;
+		tri.mat[3] = u3D.z;
+	}
 
 	return tri;
 }
 
 vector3D proj(triangle *tri, vector3D *point) {
+	//TODO can me much, much simpler
 	
 	vector3D ray;
 	ray.x = flatner(tri->n3D.x);
 	ray.y = flatner(tri->n3D.y);
 	ray.z = flatner(tri->n3D.z);
-	vector3D tp = minus(&tri->a, point);
-	float lambda = dot(&tp, &tri->n3D)/dot(&ray, &tri->n3D);
+	
+	vector3D tp;// = minus(point, &tri->a);
+	float lambda = -dot(point, &tri->n3D)/dot(&ray, &tri->n3D);
 	tp.x = point->x + lambda*ray.x;
 	tp.y = point->y + lambda*ray.y;
 	tp.z = point->z + lambda*ray.z;
-	return tp;
-	
-	//vector3D pointProj = minus(point, &tri->a);
+	return tp;//vec, tor3D pointProj = minus(point, &tri->a);
 	///proj(&pointProj, &tri->n3D);
 	//return pointProj;
 }
 static int nb_call = 0;
 //TODO broken triangle proj
 vector3D triangle_in_box(triangle *tri, vector3D *pointProj) {
-
-	nb_call++;
 	
-	sub(pointProj, &tri->a);
+	//sub(pointProj, &tri->a);
 	vector2D point2D = to2D(pointProj, tri);
 	vector2D res = point2D;
 	
@@ -201,7 +232,7 @@ vector3D triangle_in_box(triangle *tri, vector3D *pointProj) {
 	float fw = dot(&pointOu, &tri->wn);
 	float fu = dot(&pointOa, &tri->un);
 	if (fv <= 0 && fw <= 0 && fu <= 0) {
-		return to3D(tri, &res);
+		return to3DO(tri, &res);
 	}
 
 	if (fv > 0) {
@@ -223,7 +254,7 @@ vector3D triangle_in_box(triangle *tri, vector3D *pointProj) {
 			mind = dist2Dsquare(&point2D, &tri->v);
 
 		} else {
-			return to3D(tri, &res);
+			return to3DO(tri, &res);
 		}
 	}
 	
@@ -254,7 +285,7 @@ vector3D triangle_in_box(triangle *tri, vector3D *pointProj) {
 			}
 
 		} else {
-			return to3D(tri, &tp_res);
+			return to3DO(tri, &tp_res);
 		}
 	}
 		
@@ -285,16 +316,16 @@ vector3D triangle_in_box(triangle *tri, vector3D *pointProj) {
 			}
 
 		} else {
-			return to3D(tri, &tp_res);
+			return to3DO(tri, &tp_res);
 		}
 	}
-	return to3D(tri, &res);
+	return to3DO(tri, &res);
 }
 
 
 bool point_in_triangle(triangle *tri, vector3D *pointProj) {
 
-	sub(pointProj, &tri->a);
+	//sub(pointProj, &tri->a);
 	vector2D point2D = to2D(pointProj, tri);
 	vector2D res = point2D;
 	
@@ -321,6 +352,7 @@ bool triangle_in_box2(triangle& tri,
 
 	//the triangle is all in
 	//return true;
+	nb_call++;
 	//if (inBox(tri.a, corner, side))return true;
 	//if (inBox(tri.b, corner, side))return true;
 	//if (inBox(tri.c, corner, side))return true;
@@ -330,16 +362,28 @@ bool triangle_in_box2(triangle& tri,
 	middle.x += side/2;
 	middle.y += side/2;
 	middle.z += side/2;
+	sub(&middle, &tri.a);
+
 	vector3D projPoint = proj(&tri, &middle);
 	//acc(&projPoint, &tri.a, 1);
-	if (level < 7) {
+	//todo many 2D
+	if (level < 9) {
 		vector3D inter = triangle_in_box(&tri, &projPoint);
 		
 		if (dist3Dsquare(&inter, &middle) < 3/4.*side*side)return true;
 		return false;
 	}
+	char  d = tri.dim;
 
-	if (inBox(projPoint, corner, side) &&
-	    point_in_triangle(&tri, &projPoint))return true;
+	float clip = tri.a.el[(d+2)%3] - (tri.n3D.el[d%3]*middle.el[d%3] + tri.n3D.el[(d+1)%3]*middle.el[(d+1)%3])/tri.n3D.el[(d+2)%3];				  
+
+	return  clip  >= corner.el[(d+2)%3] &&  
+	        clip  <= corner.el[(d+2)%3] + side &&
+			in2DTri(middle.el[d%3]    , 
+			    	middle.el[(d+1)%3],
+				    tri.det, tri.mat);
+
+	//if (inBox(projPoint, corner, side) &&
+	//    point_in_triangle(&tri, &projPoint))return true;
 	return false;
 }
